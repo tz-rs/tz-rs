@@ -1,8 +1,12 @@
 [package]
 name = "tz-rs"
 version = "0.1.0"
-authors = ["Lma77 <lma77@cornell.edu>"]
+license = "MIT"
+authors = ["Liam Arzola <liam0215@gmail.edu>", "Felipe Arce <farceriv@gmail.com>"]
 edition = "2018"
+
+[workspace]
+members = ["rpc"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
