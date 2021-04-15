@@ -1,59 +1,61 @@
+mod rpc_commands;
 use reqwest;
-use std::io::Result;
+use rpc_commands::{GetBlocksInChain, RPCClientCommand};
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_ok() {
-        assert_eq!(2, 2);
-    }
-}
-
-enum TZChainType {
-    Main,
-    Test, // let x = TZChainType::Test("hello".to_string())
-}
-
-impl TZChainType {
-    fn get_chain_type_string(self) -> String {
-        match self {
-            Self::Main => "main",
-            Self::Test => "florencenet",
-        }
-        .to_string()
-    }
-}
-struct RPCClient {
+pub struct RPCClient {
     main_url: String,
-    chain_type: TZChainType,
     client: reqwest::Client,
 }
 
 impl RPCClient {
-    fn execute(&self, command: &Box<dyn RPCClientCommand>) -> Result<()> {
-        let endpoint_url = format!("{}/{}", self.main_url, command.get_url_name());
+    pub fn new(main_url: String) -> Self {
+        let client = reqwest::Client::new();
+        Self { main_url, client }
+    }
+
+    pub async fn execute<T: RPCClientCommand>(&self, command: &Box<T>) -> reqwest::Result<String> {
+        let raw_endpoint_url = format!("{}/{}", self.main_url, command.get_url_string(),);
+        let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
+
         let request = self.client.request(command.get_http_method(), endpoint_url);
-        request.header("Content-Type", "application/json");
-        Ok(())
+        let response = request.send().await?.text().await?;
+
+        Ok(response)
     }
 }
 
-trait RPCClientCommand {
-    fn get_url_name(&self) -> String;
-    fn get_json_data(&self) -> Option<String>; // this wouldn't be a string (obviously) but a JsonValue later on
-    fn get_http_method(&self) -> reqwest::Method;
-}
+#[cfg(test)]
+mod test_rpc_client {
+    use super::*;
 
-struct GetBalance;
+    #[test]
+    fn rpc_client_creation_ok() {
+        let main_url = String::new();
+        RPCClient::new(main_url);
+    }
 
-impl RPCClientCommand for GetBalance {
-    fn get_url_name(&self) -> String {
-        "root/chains/test/blocks/head/context/contracts/address/balance".to_string()
+    #[tokio::test]
+    async fn get_blocks_in_chain_ok() {
+        let chain_id = get_chain_id_string();
+        let command = generate_boxed_get_blocks_command(chain_id);
+
+        let client = get_client();
+
+        let raw_response = client.execute(&command).await;
+        assert!(raw_response.is_ok());
+        let response = raw_response.unwrap();
     }
-    fn get_json_data(&self) -> Option<String> {
-        None
+
+    fn get_client() -> RPCClient {
+        let main_url = "http://localhost:8090".to_string();
+        RPCClient::new(main_url)
     }
-    fn get_http_method(&self) -> reqwest::Method {
-        reqwest::Method::GET
+
+    fn get_chain_id_string() -> String {
+        "NetXdQprcVkpaWU".to_string()
+    }
+
+    fn generate_boxed_get_blocks_command(chain_id: String) -> Box<GetBlocksInChain> {
+        Box::new(GetBlocksInChain { chain_id })
     }
 }
