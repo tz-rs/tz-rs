@@ -13,6 +13,7 @@
 pub mod rpc_commands;
 use reqwest;
 use rpc_commands::RPCClientCommand;
+use url::Url;
 
 /// Client wrapper and executor for making RPC calls to the Tezos net.
 ///
@@ -22,7 +23,7 @@ use rpc_commands::RPCClientCommand;
 /// Should be instanciated only once and re-used so as to not reinstanciate
 /// the inner `reqwest` client
 pub struct RPCClient {
-    tezos_node_url: String,
+    tezos_node_url: Url,
     client: reqwest::Client,
 }
 
@@ -32,7 +33,7 @@ impl RPCClient {
     ///
     /// This should be either a `localhost` address with port included, or
     /// the address of a public mainnet or testnet node.
-    pub fn new(tezos_node_url: String) -> Self {
+    pub fn new(tezos_node_url: Url) -> Self {
         let client = reqwest::Client::new();
         Self {
             tezos_node_url,
@@ -40,16 +41,22 @@ impl RPCClient {
         }
     }
 
-    pub async fn execute<T: RPCClientCommand>(&self, command: &Box<T>) -> reqwest::Result<String> {
+    /// Makes the JSON RPC request to the endpoint specified by the
+    /// [`command`](RPCCLientCommand) passed in.
+    ///
+    /// Returns the unparsed response so as to allow for explicit error checking
+    /// directly with the [`reqwest::Response`] object.
+    pub async fn execute<T: RPCClientCommand>(
+        &self,
+        command: &Box<T>,
+    ) -> reqwest::Result<reqwest::Response> {
         let raw_endpoint_url = format!("{}/{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
 
-        println!("address: {}", endpoint_url);
-
         let request = self.client.request(command.get_http_method(), endpoint_url);
-        let response = request.send().await?.text().await?;
+        let response = request.send().await;
 
-        Ok(response)
+        response
     }
 }
 
@@ -60,7 +67,7 @@ mod test_rpc_client {
 
     #[test]
     fn rpc_client_creation_ok() {
-        let tezos_node_url = String::new();
+        let tezos_node_url = Url::parse("http://localhost").unwrap();
         RPCClient::new(tezos_node_url);
     }
 
@@ -73,7 +80,9 @@ mod test_rpc_client {
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
-        let _response = raw_response.unwrap();
+
+        let response = raw_response.unwrap();
+        assert_eq!(response.status(), 200);
     }
 
     #[tokio::test]
@@ -87,8 +96,9 @@ mod test_rpc_client {
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
+
         let response = raw_response.unwrap();
-        print!("Balance: {}", response);
+        assert_eq!(response.status(), 200);
     }
 
     #[tokio::test]
@@ -102,19 +112,20 @@ mod test_rpc_client {
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
+
         let response = raw_response.unwrap();
-        print!("Balance: {}", response);
+        assert_eq!(response.status(), 200);
     }
 
     fn get_public_testnet_client() -> RPCClient {
         // Public testnet as given here:
         // https://assets.tqtezos.com/docs/setup/1-tezos-client/#option-2--using-packages-on-ubuntu-or-fedora
-        let tezos_node_url = "https://rpcalpha.tzbeta.net".to_string();
+        let tezos_node_url = Url::parse("https://rpcalpha.tzbeta.net").unwrap();
         RPCClient::new(tezos_node_url)
     }
 
     fn _get_local_net_client() -> RPCClient {
-        let tezos_node_url = "http://localhost:8090".to_string();
+        let tezos_node_url = Url::parse("http://localhost:8090").unwrap();
         RPCClient::new(tezos_node_url)
     }
 
