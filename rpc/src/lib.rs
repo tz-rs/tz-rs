@@ -1,20 +1,47 @@
-mod rpc_commands;
+//! # tz-rpc
+//!
+//! tz-rpc serves as the top-level wrapper around raw JSON-RPC calls
+//! to a Tezos net service/implementor
+//!
+//! ## Features
+//!
+//! - Asynchronous design
+//! - Familiar and idiomatic Rust SDK
+//! - Trait-driven extensible design for RPC commands
+//! - Highly configurable for different Tezos use cases
+
+pub mod rpc_commands;
 use reqwest;
 use rpc_commands::RPCClientCommand;
 
+/// Client wrapper and executor for making RPC calls to the Tezos net.
+///
+/// Execute commands implementing [`RPCClientCommand`] by passing them
+/// into [`execute()`](Self::execute())
+///
+/// Should be instanciated only once and re-used so as to not reinstanciate
+/// the inner `reqwest` client
 pub struct RPCClient {
-    main_url: String,
+    tezos_node_url: String,
     client: reqwest::Client,
 }
 
 impl RPCClient {
-    pub fn new(main_url: String) -> Self {
+    /// Instanciates a re-usable client with the main resolving endpoint
+    /// set to the URL passed in.
+    ///
+    /// This should be either a `localhost` address with port included, or
+    /// the address of a public mainnet or testnet node.
+    pub fn new(tezos_node_url: String) -> Self {
         let client = reqwest::Client::new();
-        Self { main_url, client }
+        Self {
+            tezos_node_url,
+            client,
+        }
     }
 
     pub async fn execute<T: RPCClientCommand>(&self, command: &Box<T>) -> reqwest::Result<String> {
-        let raw_endpoint_url = format!("{}/{}", self.main_url, command.get_url_string());
+        let raw_endpoint_url = format!("{}/{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
 
         println!("address: {}", endpoint_url);
@@ -33,8 +60,8 @@ mod test_rpc_client {
 
     #[test]
     fn rpc_client_creation_ok() {
-        let main_url = String::new();
-        RPCClient::new(main_url);
+        let tezos_node_url = String::new();
+        RPCClient::new(tezos_node_url);
     }
 
     #[tokio::test]
@@ -79,19 +106,21 @@ mod test_rpc_client {
         print!("Balance: {}", response);
     }
 
-    fn _get_local_net_client() -> RPCClient {
-        let main_url = "http://localhost:8090".to_string();
-        RPCClient::new(main_url)
-    }
-
     fn get_public_testnet_client() -> RPCClient {
         // Public testnet as given here:
         // https://assets.tqtezos.com/docs/setup/1-tezos-client/#option-2--using-packages-on-ubuntu-or-fedora
-        let main_url = "https://rpcalpha.tzbeta.net".to_string();
-        RPCClient::new(main_url)
+        let tezos_node_url = "https://rpcalpha.tzbeta.net".to_string();
+        RPCClient::new(tezos_node_url)
+    }
+
+    fn _get_local_net_client() -> RPCClient {
+        let tezos_node_url = "http://localhost:8090".to_string();
+        RPCClient::new(tezos_node_url)
     }
 
     fn get_chain_id_string() -> String {
+        // NOTE: gets the ID string of the chain avaible on florencenet.
+        // might change sometime.
         "NetXdQprcVkpaWU".to_string()
     }
 
