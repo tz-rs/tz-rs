@@ -14,8 +14,10 @@ impl RPCClient {
     }
 
     pub async fn execute<T: RPCClientCommand>(&self, command: &Box<T>) -> reqwest::Result<String> {
-        let raw_endpoint_url = format!("{}/{}", self.main_url, command.get_url_string(),);
+        let raw_endpoint_url = format!("{}/{}", self.main_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
+
+        println!("address: {}", endpoint_url);
 
         let request = self.client.request(command.get_http_method(), endpoint_url);
         let response = request.send().await?.text().await?;
@@ -40,7 +42,7 @@ mod test_rpc_client {
         let chain_id = get_chain_id_string();
         let command = generate_boxed_get_blocks_command(chain_id);
 
-        let client = get_client();
+        let client = get_public_testnet_client();
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
@@ -77,7 +79,7 @@ mod test_rpc_client {
         print!("Balance: {}", response);
     }
 
-    fn get_client() -> RPCClient {
+    fn _get_local_net_client() -> RPCClient {
         let main_url = "http://localhost:8090".to_string();
         RPCClient::new(main_url)
     }
