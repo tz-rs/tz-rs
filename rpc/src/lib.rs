@@ -1,7 +1,6 @@
 mod rpc_commands;
 use reqwest;
-#[allow(unused_imports)]
-use rpc_commands::{GetBalance, GetBlocksInChain, RPCClientCommand};
+use rpc_commands::RPCClientCommand;
 
 pub struct RPCClient {
     main_url: String,
@@ -27,6 +26,7 @@ impl RPCClient {
 
 #[cfg(test)]
 mod test_rpc_client {
+    use super::rpc_commands::{GetBalance, GetBlocksInChain};
     use super::*;
 
     #[test]
