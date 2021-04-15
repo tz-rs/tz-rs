@@ -50,8 +50,10 @@ impl RPCClient {
         &self,
         command: &Box<T>,
     ) -> reqwest::Result<reqwest::Response> {
-        let raw_endpoint_url = format!("{}/{}", self.tezos_node_url, command.get_url_string());
+        let raw_endpoint_url = format!("{}{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
+
+        println!("endpoint url: {}", endpoint_url);
 
         let request = self.client.request(command.get_http_method(), endpoint_url);
         let response = request.send().await;
@@ -76,7 +78,7 @@ mod test_rpc_client {
         let chain_id = get_chain_id_string();
         let command = generate_boxed_get_blocks_command(chain_id);
 
-        let client = get_public_testnet_client();
+        let client = get_rpc_client();
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
@@ -92,7 +94,7 @@ mod test_rpc_client {
         let address = get_address_for_fake_wallet_bob();
 
         let command = generate_boxed_get_balance_command(chain_id, block_id, address);
-        let client = get_public_testnet_client();
+        let client = get_rpc_client();
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
@@ -108,7 +110,7 @@ mod test_rpc_client {
         let address = get_address_for_fake_wallet_alice();
 
         let command = generate_boxed_get_balance_command(chain_id, block_id, address);
-        let client = get_public_testnet_client();
+        let client = get_rpc_client();
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
@@ -117,16 +119,19 @@ mod test_rpc_client {
         assert_eq!(response.status(), 200);
     }
 
-    fn get_public_testnet_client() -> RPCClient {
+    fn get_rpc_client() -> RPCClient {
         // Public testnet as given here:
         // https://assets.tqtezos.com/docs/setup/1-tezos-client/#option-2--using-packages-on-ubuntu-or-fedora
-        let tezos_node_url = Url::parse("https://rpcalpha.tzbeta.net").unwrap();
+        let tezos_node_url = get_local_testnet_url();
         RPCClient::new(tezos_node_url)
     }
 
-    fn _get_local_net_client() -> RPCClient {
-        let tezos_node_url = Url::parse("http://localhost:8090").unwrap();
-        RPCClient::new(tezos_node_url)
+    fn _get_public_testnet_url() -> Url {
+        Url::parse("https://rpcalpha.tzbeta.net").unwrap()
+    }
+
+    fn get_local_testnet_url() -> Url {
+        Url::parse("http://localhost:8090").unwrap()
     }
 
     fn get_chain_id_string() -> String {
