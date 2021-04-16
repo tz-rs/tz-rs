@@ -22,3 +22,13 @@ fn _get_public_testnet_url() -> Url {
 fn get_local_testnet_url() -> Url {
     Url::parse("http://localhost:8090").unwrap()
 }
+
+fn get_chain_id_for_public_testnet() -> String {
+    // IMPORTANT: This is specifically for https://rpcalpha.tzbeta.net testnet
+    "main".to_string()
+}
+
+fn get_block_id_for_public_testnet() -> String {
+    // IMPORTANT: This is specifically for https://rpcalpha.tzbeta.net testnet
+    "head".to_string()
+}

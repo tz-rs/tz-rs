@@ -36,16 +36,6 @@ async fn get_balance_for_alice_ok() {
     assert_eq!(response.status(), 200);
 }
 
-fn get_chain_id_for_public_testnet() -> String {
-    // IMPORTANT: This is specifically for https://rpcalpha.tzbeta.net testnet
-    "main".to_string()
-}
-
-fn get_block_id_for_public_testnet() -> String {
-    // IMPORTANT: This is specifically for https://rpcalpha.tzbeta.net testnet
-    "head".to_string()
-}
-
 fn get_address_for_fake_wallet_bob() -> String {
     // Address for a fake wallet belonging to Bob
     "tz1VkjQjvH3NTVdFtGz9tWutgxLKwnhnMe2x".to_string()
