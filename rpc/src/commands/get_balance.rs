@@ -1,5 +1,4 @@
 use super::RPCClientCommand;
-use reqwest;
 pub struct GetBalance {
     pub chain_id: String,
     pub block_id: String,

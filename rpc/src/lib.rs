@@ -13,7 +13,6 @@
 pub mod commands;
 pub mod responses;
 use commands::RPCClientCommand;
-use reqwest;
 use url::Url;
 
 /// Client wrapper and executor for making RPC calls to the Tezos net.

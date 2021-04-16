@@ -1,5 +1,4 @@
 use super::RPCClientCommand;
-use reqwest;
 pub struct GetBlocksInChain {
     pub chain_id: String,
 }
