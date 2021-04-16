@@ -41,8 +41,23 @@ impl RPCClient {
         }
     }
 
+    /// Sends a `GET` request to the node's `/version` endpoint,
+    /// checking that the response was Ok and returned a status
+    /// code in the 200s.
+    ///
+    /// Can be used as a pre-flight `OPTIONS` check to fail fast on node connections
+    pub async fn check_node_online(&self) -> bool {
+        let default_url = format!("{}version", &self.tezos_node_url);
+        let response_result = self.client.get(default_url).send().await;
+
+        match response_result {
+            Ok(response) => response.status() == 200,
+            Err(_) => false,
+        }
+    }
+
     /// Makes the JSON RPC request to the endpoint specified by the
-    /// [`command`](RPCCLientCommand) passed in.
+    /// [`command`](RPCClientCommand) passed in.
     ///
     /// Returns the unparsed response so as to allow for explicit error checking
     /// directly with the [`reqwest::Response`] object.
@@ -52,8 +67,6 @@ impl RPCClient {
     ) -> reqwest::Result<reqwest::Response> {
         let raw_endpoint_url = format!("{}{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
-
-        println!("endpoint url: {}", endpoint_url);
 
         let request = self.client.request(command.get_http_method(), endpoint_url);
         let response = request.send().await;
@@ -74,11 +87,22 @@ mod test_rpc_client {
     }
 
     #[tokio::test]
+    async fn invalid_url_fails_health_check() {
+        let invalid_url = "http://localhost:8091";
+        let tezos_node_url = Url::parse(invalid_url).unwrap();
+        let client = RPCClient::new(tezos_node_url);
+
+        let health_check_invalid = !client.check_node_online().await;
+        assert!(health_check_invalid);
+    }
+
+    #[tokio::test]
     async fn get_blocks_in_chain_ok() {
         let chain_id = get_chain_id_string();
         let command = generate_boxed_get_blocks_command(chain_id);
 
         let client = get_rpc_client();
+        assert!(client.check_node_online().await);
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
@@ -95,6 +119,7 @@ mod test_rpc_client {
 
         let command = generate_boxed_get_balance_command(chain_id, block_id, address);
         let client = get_rpc_client();
+        assert!(client.check_node_online().await);
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
@@ -111,6 +136,8 @@ mod test_rpc_client {
 
         let command = generate_boxed_get_balance_command(chain_id, block_id, address);
         let client = get_rpc_client();
+
+        assert!(client.check_node_online().await);
 
         let raw_response = client.execute(&command).await;
         assert!(raw_response.is_ok());
