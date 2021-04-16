@@ -52,6 +52,6 @@ async fn get_response_from_get_blocks_in_chain_call(chain_id: String) -> std::io
     Ok(response.text().await.unwrap())
 }
 
-fn generate_boxed_get_blocks_command(chain_id: String) -> Box<GetBlocksInChain> {
-    Box::new(GetBlocksInChain { chain_id })
+fn generate_boxed_get_blocks_command(chain_id: String) -> GetBlocksInChain {
+    GetBlocksInChain { chain_id }
 }

@@ -50,10 +50,10 @@ fn generate_boxed_get_balance_command(
     chain_id: String,
     block_id: String,
     address: String,
-) -> Box<GetBalance> {
-    Box::new(GetBalance {
+) -> GetBalance {
+    GetBalance {
         chain_id,
         block_id,
         address,
-    })
+    }
 }

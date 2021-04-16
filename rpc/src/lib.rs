@@ -63,7 +63,7 @@ impl RPCClient {
     /// directly with the [`reqwest::Response`] object.
     pub async fn execute<T: RPCClientCommand>(
         &self,
-        command: &Box<T>,
+        command: &T,
     ) -> reqwest::Result<reqwest::Response> {
         let raw_endpoint_url = format!("{}{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
