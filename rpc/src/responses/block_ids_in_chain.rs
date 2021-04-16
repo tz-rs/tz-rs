@@ -31,8 +31,10 @@ impl FromStr for BlocksInChainResponse {
                 current_block_id.push(raw_char);
             }
         }
-        // push last block ID
-        block_id_vec.push(current_block_id);
+        // push last block ID if string is not empty
+        if !current_block_id.is_empty() {
+            block_id_vec.push(current_block_id);
+        }
 
         Ok(Self {
             block_ids: block_id_vec,
@@ -43,13 +45,56 @@ impl FromStr for BlocksInChainResponse {
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
-    fn get_blocks_in_chain_response_from_str() {
+    fn get_blocks_in_chain_from_response_empty_ok() {
         let mock_response = "";
         let parse_result = BlocksInChainResponse::from_str(mock_response);
         assert!(parse_result.is_ok());
 
         let blocks = parse_result.unwrap();
-        assert!(blocks.block_ids.len() > 0);
+        assert!(blocks.block_ids.len() == 0);
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_response_single_ok() {
+        let mock_block_id = "blockId1";
+        let mock_response = format!(r#"[["{}"]]"#, mock_block_id);
+
+        let parse_result = BlocksInChainResponse::from_str(&mock_response);
+        assert!(parse_result.is_ok());
+
+        let mut blocks = parse_result.unwrap();
+        assert!(blocks.block_ids.len() == 1);
+
+        let parsed_block_id_result = blocks.block_ids.pop();
+        assert!(parsed_block_id_result.is_some());
+
+        let parsed_block_id = parsed_block_id_result.unwrap();
+        assert_eq!(&parsed_block_id, mock_block_id);
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_response_multiple_ok() {
+        let mock_block_ids = ["blockId1", "blockId2", "blockId3"];
+        let mock_response = format!(
+            "[{}]",
+            mock_block_ids
+                .iter()
+                .map(|block_id| format!(r#"["{}"]"#, &block_id))
+                .collect::<Vec<String>>()
+                .join(",")
+        );
+
+        let parse_result = BlocksInChainResponse::from_str(&mock_response);
+        assert!(parse_result.is_ok());
+
+        let mut blocks = parse_result.unwrap();
+        assert!(blocks.block_ids.len() == 3);
+
+        for mock_block_id in mock_block_ids.iter().rev() {
+            let block_id_to_compare = blocks.block_ids.pop().unwrap();
+            assert_eq!(&block_id_to_compare, mock_block_id);
+        }
     }
 }
