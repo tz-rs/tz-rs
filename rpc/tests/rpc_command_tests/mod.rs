@@ -1,5 +1,4 @@
-use rpc::rpc_commands;
-use rpc::RPCClient;
+use rpc::{commands, responses, RPCClient};
 use url::Url;
 
 mod get_balance_from_block;

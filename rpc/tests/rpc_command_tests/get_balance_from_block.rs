@@ -1,5 +1,5 @@
 use super::*;
-use rpc_commands::GetBalance;
+use commands::GetBalance;
 
 #[tokio::test]
 async fn get_balance_for_bob_ok() {

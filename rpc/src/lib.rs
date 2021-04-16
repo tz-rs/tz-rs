@@ -10,9 +10,10 @@
 //! - Trait-driven extensible design for RPC commands
 //! - Highly configurable for different Tezos use cases
 
-pub mod rpc_commands;
+pub mod commands;
+pub mod responses;
+use commands::RPCClientCommand;
 use reqwest;
-use rpc_commands::RPCClientCommand;
 use url::Url;
 
 /// Client wrapper and executor for making RPC calls to the Tezos net.
