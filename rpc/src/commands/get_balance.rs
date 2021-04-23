@@ -1,4 +1,6 @@
 use super::RPCClientCommand;
+use crate::responses::BalanceResponse;
+
 pub struct GetBalance {
     pub chain_id: String,
     pub block_id: String,
@@ -6,6 +8,8 @@ pub struct GetBalance {
 }
 
 impl RPCClientCommand for GetBalance {
+    type R = BalanceResponse;
+
     fn get_url_string(&self) -> String {
         format!(
             "chains/{}/blocks/{}/context/contracts/{}/balance",

@@ -1,3 +1,4 @@
+use super::Response;
 use std::str::FromStr;
 use std::string::ParseError;
 
@@ -39,6 +40,16 @@ impl FromStr for BlocksInChainResponse {
         Ok(Self {
             block_ids: block_id_vec,
         })
+    }
+}
+
+impl Response for BlocksInChainResponse {
+    fn from_response_str(response: &str) -> Self {
+        let mut block_id_vec = Vec::new();
+        block_id_vec.push(String::from_str(response).unwrap());
+        Self {
+            block_ids: block_id_vec,
+        }
     }
 }
 
