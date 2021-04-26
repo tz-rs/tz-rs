@@ -3,11 +3,9 @@ use commands::GetBalance;
 
 #[tokio::test]
 async fn get_balance_for_bob_ok() {
-    let chain_id = get_chain_id_for_public_testnet();
-    let block_id = get_block_id_for_public_testnet();
     let address = get_address_for_fake_wallet_bob();
 
-    let command = generate_boxed_get_balance_command(chain_id, block_id, address);
+    let command = generate_get_balance_command_for_public_testnet(address);
     let client = get_rpc_client();
     assert!(client.check_node_online().await);
 
@@ -20,11 +18,9 @@ async fn get_balance_for_bob_ok() {
 
 #[tokio::test]
 async fn get_balance_for_alice_ok() {
-    let chain_id = get_chain_id_for_public_testnet();
-    let block_id = get_block_id_for_public_testnet();
     let address = get_address_for_fake_wallet_alice();
 
-    let command = generate_boxed_get_balance_command(chain_id, block_id, address);
+    let command = generate_get_balance_command_for_public_testnet(address);
     let client = get_rpc_client();
 
     assert!(client.check_node_online().await);
@@ -46,11 +42,9 @@ fn get_address_for_fake_wallet_alice() -> String {
     "tz1PBRwGc83hSDBFw1LsyuzTcz1EGBHj4DMk".to_string()
 }
 
-fn generate_boxed_get_balance_command(
-    chain_id: String,
-    block_id: String,
-    address: String,
-) -> GetBalance {
+fn generate_get_balance_command_for_public_testnet(address: String) -> GetBalance {
+    let chain_id = get_chain_id_by_tag_for_public_testnet();
+    let block_id = get_block_id_by_tag_for_public_testnet();
     GetBalance {
         chain_id,
         block_id,
