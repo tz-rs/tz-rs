@@ -13,7 +13,7 @@ async fn get_balance_for_bob_ok() {
     assert!(raw_response.is_ok());
 
     let response = raw_response.unwrap();
-    assert_eq!(response.status(), 200);
+    assert_eq!(response.balance, 0);
 }
 
 #[tokio::test]
@@ -29,7 +29,7 @@ async fn get_balance_for_alice_ok() {
     assert!(raw_response.is_ok());
 
     let response = raw_response.unwrap();
-    assert_eq!(response.status(), 200);
+    assert_eq!(response.balance, 0);
 }
 
 fn get_address_for_fake_wallet_bob() -> String {
