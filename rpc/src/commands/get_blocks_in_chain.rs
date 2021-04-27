@@ -1,21 +1,9 @@
 use super::RpcClientCommand;
 use crate::responses::BlocksInChainResponse;
-use crate::types::ChainType;
+use crate::types::Chain;
 
 pub struct GetBlocksInChain {
-    chain_id: ChainType,
-}
-
-impl GetBlocksInChain {
-    pub fn with_chain_id(chain_id_string: String) -> Self {
-        let chain_id = ChainType::Other(chain_id_string);
-        Self { chain_id }
-    }
-
-    pub fn for_main_chain() -> Self {
-        let chain_id = ChainType::Main;
-        Self { chain_id }
-    }
+    pub chain_id: Chain,
 }
 
 impl RpcClientCommand for GetBlocksInChain {

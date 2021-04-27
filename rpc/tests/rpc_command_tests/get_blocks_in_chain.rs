@@ -3,8 +3,7 @@ use commands::GetBlocksInChain;
 
 #[tokio::test]
 async fn get_blocks_in_chain_ok() {
-    let chain_id = get_chain_id_by_hash();
-    let command = generate_get_blocks_command(chain_id);
+    let command = generate_get_blocks_command_for_main_chain();
 
     let client = get_rpc_client();
     assert!(client.check_node_online().await);
@@ -16,6 +15,7 @@ async fn get_blocks_in_chain_ok() {
     assert!(block.block_ids.len() > 0);
 }
 
-fn generate_get_blocks_command(chain_id: String) -> GetBlocksInChain {
-    GetBlocksInChain::with_chain_id(chain_id)
+fn generate_get_blocks_command_for_main_chain() -> GetBlocksInChain {
+    let chain_id = get_main_chain_id_by_tag();
+    GetBlocksInChain { chain_id }
 }

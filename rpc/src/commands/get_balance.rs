@@ -1,10 +1,10 @@
 use super::RpcClientCommand;
 use crate::responses::BalanceResponse;
-use crate::types::ChainType;
+use crate::types::{Block, Chain};
 
 pub struct GetBalance {
-    pub chain_id: ChainType,
-    pub block_id: String,
+    pub chain_id: Chain,
+    pub block_id: Block,
     pub address: String,
 }
 
@@ -15,7 +15,7 @@ impl RpcClientCommand for GetBalance {
         format!(
             "chains/{}/blocks/{}/context/contracts/{}/balance",
             &self.chain_id.to_str(),
-            &self.block_id,
+            &self.block_id.to_str(),
             &self.address
         )
     }

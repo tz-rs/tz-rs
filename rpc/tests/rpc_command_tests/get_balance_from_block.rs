@@ -43,8 +43,8 @@ fn get_address_for_fake_wallet_alice() -> String {
 }
 
 fn generate_get_balance_command_for_public_testnet(address: String) -> GetBalance {
-    let chain_id = get_chain_id_by_tag_for_public_testnet();
-    let block_id = get_block_id_by_tag_for_public_testnet();
+    let chain_id = get_main_chain_id_by_tag();
+    let block_id = get_block_id_by_tag();
     GetBalance {
         chain_id,
         block_id,
