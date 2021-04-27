@@ -4,11 +4,10 @@ pub enum ChainType {
 }
 
 impl ChainType {
-    pub fn to_string(&self) -> String {
+    pub fn to_str(&self) -> &str {
         match self {
             Self::Main => "main",
             Self::Other(chain_id) => chain_id,
         }
-        .to_string()
     }
 }

@@ -12,7 +12,7 @@
 
 pub mod commands;
 pub mod responses;
-mod types;
+pub mod types;
 use commands::RPCClientCommand;
 use url::Url;
 

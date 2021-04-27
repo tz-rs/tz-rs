@@ -1,4 +1,4 @@
-use rpc::{commands, RPCClient};
+use rpc::{commands, types, RPCClient};
 use url::Url;
 
 mod get_balance_from_block;
@@ -22,8 +22,8 @@ fn get_local_testnet_url() -> Url {
     Url::parse("http://localhost:8090").unwrap()
 }
 
-fn get_chain_id_by_tag_for_public_testnet() -> String {
-    "main".to_string()
+fn get_chain_id_by_tag_for_public_testnet() -> types::ChainType {
+    types::ChainType::Main
 }
 
 fn get_block_id_by_tag_for_public_testnet() -> String {
