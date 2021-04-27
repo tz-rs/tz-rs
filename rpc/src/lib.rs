@@ -60,8 +60,8 @@ impl RpcClient {
     /// Makes the JSON RPC request to the endpoint specified by the
     /// [`command`](RpcClientCommand) passed in.
     ///
-    /// Returns the unparsed response so as to allow for explicit error checking
-    /// directly with the [`reqwest::Response`] object.
+    /// Returns a response object parsed by the incoming command from the
+    /// raw server response.
     pub async fn execute<T: RpcClientCommand>(
         &self,
         command: &T,
