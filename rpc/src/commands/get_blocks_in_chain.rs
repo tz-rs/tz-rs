@@ -1,10 +1,6 @@
 use super::RPCClientCommand;
 use crate::responses::BlocksInChainResponse;
-
-enum ChainType {
-    Main,
-    Other(String),
-}
+use crate::types::ChainType;
 
 pub struct GetBlocksInChain {
     chain_id: ChainType,
@@ -26,11 +22,7 @@ impl RPCClientCommand for GetBlocksInChain {
     type R = BlocksInChainResponse;
 
     fn get_url_string(&self) -> String {
-        let chain_id_string = match &self.chain_id {
-            ChainType::Main => "main",
-            ChainType::Other(chain_id) => chain_id,
-        };
-        format!("chains/{}/blocks", &chain_id_string)
+        format!("chains/{}/blocks", self.chain_id.to_string())
     }
 
     fn get_http_method(&self) -> reqwest::Method {
