@@ -1,4 +1,4 @@
-use rpc::{commands, types, RPCClient};
+use rpc::{commands, types, RpcClient};
 use url::Url;
 
 mod get_balance_from_block;
@@ -10,9 +10,9 @@ fn get_chain_id_by_hash() -> String {
     "NetXdQprcVkpaWU".to_string()
 }
 
-fn get_rpc_client() -> RPCClient {
+fn get_rpc_client() -> RpcClient {
     let tezos_node_url = get_local_testnet_url();
-    RPCClient::new(tezos_node_url)
+    RpcClient::new(tezos_node_url)
 }
 
 fn _get_public_testnet_url() -> Url {

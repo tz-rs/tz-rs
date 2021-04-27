@@ -1,4 +1,4 @@
-use super::RPCClientCommand;
+use super::RpcClientCommand;
 use crate::responses::BalanceResponse;
 use crate::types::ChainType;
 
@@ -8,7 +8,7 @@ pub struct GetBalance {
     pub address: String,
 }
 
-impl RPCClientCommand for GetBalance {
+impl RpcClientCommand for GetBalance {
     type R = BalanceResponse;
 
     fn get_url_string(&self) -> String {

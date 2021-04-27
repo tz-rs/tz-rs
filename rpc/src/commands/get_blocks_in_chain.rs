@@ -1,4 +1,4 @@
-use super::RPCClientCommand;
+use super::RpcClientCommand;
 use crate::responses::BlocksInChainResponse;
 use crate::types::ChainType;
 
@@ -18,7 +18,7 @@ impl GetBlocksInChain {
     }
 }
 
-impl RPCClientCommand for GetBlocksInChain {
+impl RpcClientCommand for GetBlocksInChain {
     type R = BlocksInChainResponse;
 
     fn get_url_string(&self) -> String {

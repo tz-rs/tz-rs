@@ -4,7 +4,7 @@ mod get_blocks_in_chain;
 pub use get_balance::GetBalance;
 pub use get_blocks_in_chain::GetBlocksInChain;
 
-pub trait RPCClientCommand {
+pub trait RpcClientCommand {
     type R: Response;
     fn get_url_string(&self) -> String;
     fn get_http_method(&self) -> reqwest::Method;

@@ -13,22 +13,22 @@
 pub mod commands;
 pub mod responses;
 pub mod types;
-use commands::RPCClientCommand;
+use commands::RpcClientCommand;
 use url::Url;
 
 /// Client wrapper and executor for making RPC calls to the Tezos net.
 ///
-/// Execute commands implementing [`RPCClientCommand`] by passing them
+/// Execute commands implementing [`RpcClientCommand`] by passing them
 /// into [`execute()`](Self::execute())
 ///
 /// Should be instanciated only once and re-used so as to not reinstanciate
 /// the inner `reqwest` client
-pub struct RPCClient {
+pub struct RpcClient {
     tezos_node_url: Url,
     client: reqwest::Client,
 }
 
-impl RPCClient {
+impl RpcClient {
     /// Instanciates a re-usable client with the main resolving endpoint
     /// set to the URL passed in.
     ///
@@ -58,14 +58,14 @@ impl RPCClient {
     }
 
     /// Makes the JSON RPC request to the endpoint specified by the
-    /// [`command`](RPCClientCommand) passed in.
+    /// [`command`](RpcClientCommand) passed in.
     ///
     /// Returns the unparsed response so as to allow for explicit error checking
     /// directly with the [`reqwest::Response`] object.
-    pub async fn execute<T: RPCClientCommand>(
+    pub async fn execute<T: RpcClientCommand>(
         &self,
         command: &T,
-    ) -> Result<<T as RPCClientCommand>::R, reqwest::Error> {
+    ) -> Result<<T as RpcClientCommand>::R, reqwest::Error> {
         let raw_endpoint_url = format!("{}{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
 
