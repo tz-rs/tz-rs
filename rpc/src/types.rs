@@ -1,5 +1,6 @@
 pub enum Chain {
     Main,
+    Test,
     Other(String),
 }
 
@@ -7,6 +8,7 @@ impl Chain {
     pub fn to_str(&self) -> &str {
         match self {
             Self::Main => "main",
+            Self::Test => "test",
             Self::Other(chain_id) => chain_id,
         }
     }
@@ -14,7 +16,7 @@ impl Chain {
 
 pub enum Block {
     Head,
-    Tail,
+    Genesis,
     Other(String),
 }
 
@@ -22,7 +24,7 @@ impl Block {
     pub fn to_str(&self) -> &str {
         match self {
             Self::Head => "head",
-            Self::Tail => "tail",
+            Self::Genesis => "genesis",
             Self::Other(block_id) => block_id,
         }
     }
