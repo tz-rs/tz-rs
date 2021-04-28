@@ -6,7 +6,7 @@ pub struct BulkArray<T> {
 
 impl BulkArray<String> {
     pub fn from_str(str_to_parse: &str) -> Self {
-        let parse_response = serde_json::from_str(str_to_parse).unwrap_or(json!([]));
+        let parse_response = serde_json::from_str(str_to_parse).unwrap_or_else(|_| json!([]));
         let parsed_bulk_array = parse_response.as_array().unwrap();
 
         let mut flattened_vec = Vec::new();
@@ -25,7 +25,7 @@ impl BulkArray<String> {
         Self { flattened_vec }
     }
 
-    pub fn to_vec(self) -> Vec<String> {
+    pub fn into_vec(self) -> Vec<String> {
         self.flattened_vec
     }
 }

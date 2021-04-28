@@ -24,7 +24,7 @@ mod test {
     fn get_blocks_in_chain_from_response_empty_ok() {
         let mock_response = "";
         let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
-        let blocks = blocks_response.block_ids.to_vec();
+        let blocks = blocks_response.block_ids.into_vec();
         assert!(blocks.is_empty());
     }
 
@@ -32,7 +32,7 @@ mod test {
     fn get_blocks_in_chain_from_empty_list_ok() {
         let mock_response = "[]";
         let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
-        let blocks = blocks_response.block_ids.to_vec();
+        let blocks = blocks_response.block_ids.into_vec();
         assert!(blocks.is_empty());
     }
 
@@ -49,7 +49,7 @@ mod test {
         let mock_response = format!(r#"[["{}"]]"#, mock_block_id);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
-        let mut blocks = blocks_response.block_ids.to_vec();
+        let mut blocks = blocks_response.block_ids.into_vec();
 
         assert!(blocks.len() == 1);
 
@@ -73,7 +73,7 @@ mod test {
         );
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
-        let mut blocks = blocks_response.block_ids.to_vec();
+        let mut blocks = blocks_response.block_ids.into_vec();
 
         assert!(blocks.len() == 3);
 

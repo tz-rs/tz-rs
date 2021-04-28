@@ -12,7 +12,7 @@ async fn get_blocks_in_chain_ok() {
     assert!(client_response.is_ok());
 
     let block_response = client_response.unwrap();
-    let blocks = block_response.block_ids.to_vec();
+    let blocks = block_response.block_ids.into_vec();
     assert!(blocks.len() > 0);
 }
 
