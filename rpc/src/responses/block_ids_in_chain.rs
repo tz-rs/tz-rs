@@ -1,4 +1,5 @@
 use super::Response;
+use serde_json::{self, json};
 
 pub struct BlocksInChainResponse {
     pub block_ids: Vec<String>,
@@ -13,25 +14,15 @@ impl Response for BlocksInChainResponse {
     /// if the separator character/block ID delimiter changes in the
     /// future to something other than `,`, this method will fail.
     fn from_response_str(response: &str) -> Self {
+        let parsed_block_ids = serde_json::from_str(response)
+            .unwrap_or(json!([]))
+            .as_array()
+            .unwrap();
+
         let mut block_id_vec = Vec::new();
-
-        let mut current_block_id = String::new();
-        let block_id_separator_char = ',';
-
-        for raw_char in response.chars() {
-            if raw_char == block_id_separator_char {
-                let block_id_to_add = current_block_id.clone();
-                block_id_vec.push(block_id_to_add);
-                current_block_id.clear();
-            }
-            if raw_char.is_alphanumeric() {
-                current_block_id.push(raw_char);
-            }
-        }
-
-        // push last block ID if string is not empty
-        if !current_block_id.is_empty() {
-            block_id_vec.push(current_block_id);
+        for nested_block_id in parsed_block_ids {
+            let block_id = nested_block_id.pop().unwrap();
+            block_id_vec.push(block_id);
         }
 
         Self {
