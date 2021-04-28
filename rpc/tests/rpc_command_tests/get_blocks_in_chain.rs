@@ -11,8 +11,9 @@ async fn get_blocks_in_chain_ok() {
     let client_response = client.execute(&command).await;
     assert!(client_response.is_ok());
 
-    let block = client_response.unwrap();
-    assert!(block.block_ids.len() > 0);
+    let block_response = client_response.unwrap();
+    let blocks = block_response.block_ids.to_vec();
+    assert!(blocks.len() > 0);
 }
 
 fn generate_get_blocks_command_for_main_chain() -> GetBlocksInChain {
