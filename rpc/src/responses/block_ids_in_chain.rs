@@ -1,17 +1,15 @@
 use super::bulk_array;
-use super::Response;
+use super::{ParseError, Response};
 
 pub struct BlocksInChainResponse {
     pub block_ids: bulk_array::BulkArray<String>,
 }
 
 impl Response for BlocksInChainResponse {
-    type E = bulk_array::ParseError;
-
     /// Parses a response string in the form
     /// `"[["alpha_numeric_block_id_string"], ["..."]]"` into a
     /// [`BlocksInChainResponse`](Self).
-    fn from_response_str(response: &str) -> Result<Self, Self::E> {
+    fn from_response_str(response: &str) -> Result<Self, ParseError> {
         let block_ids = bulk_array::BulkArray::from_str(response)?;
 
         Ok(Self { block_ids })
@@ -52,7 +50,6 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn get_blocks_in_chain_from_malformed_response_fails() {
         let mock_response = "[[]]";
 

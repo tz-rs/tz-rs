@@ -1,5 +1,5 @@
+use super::ParseError;
 use serde_json::{self, json, Value};
-use std::{error::Error, fmt};
 
 pub struct BulkArray<T> {
     flattened_vec: Vec<T>,
@@ -25,21 +25,13 @@ impl BulkArray<String> {
 }
 
 fn unwrap_string_in_nested_json_array(nested_item: &Value) -> Result<String, ParseError> {
-    match nested_item.as_array() {
-        Some(item_array) => match item_array.last() {
-            Some(unwrapped_value) => Ok(unwrapped_value.as_str().unwrap_or("").to_string()),
-            None => Err(ParseError),
-        },
-        None => Err(ParseError),
-    }
-}
-
-#[derive(Debug)]
-pub struct ParseError;
-
-impl Error for ParseError {}
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error parsing or flattening bulk array JSON text")
-    }
+    let generate_none_error = |detail: &str| ParseError::ResponseParsingError(detail.to_string());
+    Ok(nested_item
+        .as_array()
+        .ok_or_else(|| generate_none_error("invalid initial json array"))?
+        .last()
+        .ok_or_else(|| generate_none_error("initial json array is empty"))?
+        .as_str()
+        .ok_or_else(|| generate_none_error("json array value is not a string"))?
+        .to_string())
 }
