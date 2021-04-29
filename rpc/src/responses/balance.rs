@@ -1,12 +1,14 @@
 use super::Response;
+use std::num::ParseIntError;
 
 pub struct BalanceResponse {
     pub balance: u32,
 }
 
 impl Response for BalanceResponse {
-    fn from_response_str(response: &str) -> Self {
-        let balance = response.trim().replace("\"", "").parse().unwrap();
-        Self { balance }
+    type E = ParseIntError;
+    fn from_response_str(response: &str) -> Result<Self, Self::E> {
+        let balance = response.trim().replace("\"", "").parse()?;
+        Ok(Self { balance })
     }
 }
