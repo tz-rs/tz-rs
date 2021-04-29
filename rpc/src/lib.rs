@@ -11,10 +11,10 @@
 //! - Highly configurable for different Tezos use cases
 
 pub mod commands;
+pub mod errors;
 pub mod responses;
 pub mod types;
 use commands::RpcClientCommand;
-use types::errors;
 use url::Url;
 
 /// Client wrapper and executor for making RPC calls to the Tezos net.

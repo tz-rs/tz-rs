@@ -1,5 +1,5 @@
+use crate::errors::ParseError;
 use crate::responses::Response;
-use crate::types::errors::ParseError;
 
 mod get_balance;
 mod get_blocks_in_chain;
