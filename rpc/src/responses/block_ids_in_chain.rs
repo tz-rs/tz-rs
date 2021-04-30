@@ -1,16 +1,17 @@
-use super::bulk_array;
+use super::json_array;
 use super::{ParseError, Response};
 
 pub struct BlocksInChainResponse {
-    pub block_ids: bulk_array::BulkArray<String>,
+    pub block_ids: json_array::JsonArray<String>,
 }
 
 impl Response for BlocksInChainResponse {
     /// Parses a response string in the form
-    /// `"[["alpha_numeric_block_id_string"], ["..."]]"` into a
+    /// `"[["alpha_numeric_block_id_string"], ["..."]]"` or
+    /// `"["alpha_numeric_block_id_string", ...]"` into a
     /// [`BlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let block_ids = bulk_array::BulkArray::from_str(response)?;
+        let block_ids = json_array::JsonArray::from_str(response)?;
 
         Ok(Self { block_ids })
     }
@@ -19,6 +20,66 @@ impl Response for BlocksInChainResponse {
 #[cfg(test)]
 mod test {
     use super::*;
+    use serde::{Deserialize, Serialize};
+
+    /// Mock struct that represents the
+    /// object expected to be found in
+    /// a response.
+    #[derive(Serialize, Deserialize)]
+    struct MockBlockInChain {
+        block_id: String,
+    }
+
+    struct BlocksInChainMockResponse {
+        pub mock_block_ids: json_array::JsonArray<MockBlockInChain>,
+    }
+
+    impl Response for BlocksInChainMockResponse {
+        /// Parses a response string in the form
+        /// `"[[{"block_id":"alpha_numeric_block_id_string"}], ["..."]]"` or
+        /// `"[{"block_id":"alpha_numeric_block_id_string"}, ...]"` into a
+        /// [`BlocksInChainMockResponse`](Self).
+        fn from_response_str(response: &str) -> Result<Self, ParseError> {
+            let mock_block_ids = json_array::JsonArray::from_str(response)?;
+            Ok(Self { mock_block_ids })
+        }
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_object_response_expecting_string_fails() {
+        let mock_response = r#"[[{"block_id": "1"}]]"#;
+
+        let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
+        assert!(blocks_response.is_err());
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_object_response_expecting_object_ok() {
+        let mock_response = r#"[[{"block_id": "1"}]]"#;
+
+        let blocks_response = BlocksInChainMockResponse::from_response_str(mock_response);
+        assert!(blocks_response.is_ok());
+
+        let blocks = blocks_response.unwrap().mock_block_ids.into_vec();
+        assert!(blocks.len() == 1);
+
+        let single_block = &blocks[0];
+        assert!(single_block.block_id == "1");
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_flat_array_object_response_expecting_object_ok() {
+        let mock_response = r#"[{"block_id": "2"}]"#;
+
+        let blocks_response = BlocksInChainMockResponse::from_response_str(mock_response);
+        assert!(blocks_response.is_ok());
+
+        let blocks = blocks_response.unwrap().mock_block_ids.into_vec();
+        assert!(blocks.len() == 1);
+
+        let single_block = &blocks[0];
+        assert!(single_block.block_id == "2");
+    }
 
     #[test]
     fn get_blocks_in_chain_from_response_empty_ok() {
@@ -36,7 +97,10 @@ mod test {
         let mock_response = r#"["blockId1"]"#;
 
         let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
-        assert!(blocks_response.is_err());
+        assert!(blocks_response.is_ok());
+
+        let blocks = blocks_response.unwrap().block_ids.into_vec();
+        assert!(blocks.len() == 1);
     }
 
     #[test]
