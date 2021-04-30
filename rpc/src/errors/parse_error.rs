@@ -18,6 +18,12 @@ impl From<url::ParseError> for ParseError {
     }
 }
 
+impl From<serde_json::Error> for ParseError {
+    fn from(serde_error: serde_json::Error) -> Self {
+        Self::ResponseParsingError(serde_error.to_string())
+    }
+}
+
 impl Error for ParseError {}
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

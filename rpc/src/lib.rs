@@ -69,6 +69,7 @@ impl RpcClient {
     ) -> Result<<T as RpcClientCommand>::R, errors::RpcError> {
         let raw_endpoint_url = format!("{}{}", self.tezos_node_url, command.get_url_string());
         let endpoint_url = reqwest::Url::parse(&raw_endpoint_url)?;
+        println!("cont: {}", &endpoint_url);
 
         let request = self.client.request(command.get_http_method(), endpoint_url);
         let response_str = request.send().await?.text().await?;
