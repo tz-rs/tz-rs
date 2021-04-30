@@ -31,11 +31,11 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
 
 fn unwrap_item_in_nested_json_array(nested_item: &Value) -> Result<&Value, ParseError> {
     let generate_none_error = |detail: &str| ParseError::ResponseParsingError(detail.to_string());
-    Ok(nested_item
+    nested_item
         .as_array()
         .ok_or_else(|| generate_none_error("invalid initial json array"))?
         .last()
-        .ok_or_else(|| generate_none_error("initial json array is empty"))?)
+        .ok_or_else(|| generate_none_error("initial json array is empty"))
 }
 
 fn convert_item_value_to_type<T: de::DeserializeOwned>(
