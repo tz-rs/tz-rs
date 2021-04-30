@@ -19,6 +19,6 @@ jobs:
       - name: Build
         run: cargo build --verbose
       - name: Run tests
-        run: cargo test --workspace --verbose --lib
+        run: cargo test --workspace --verbose
       - name: Run linter
         run: cargo clippy --all -- -D warnings
