@@ -1,55 +1,85 @@
-use std::str::FromStr;
-use std::string::ParseError;
+use super::bulk_array::BulkArray;
+use super::Response;
 
 pub struct BlocksInChainResponse {
-    pub block_ids: Vec<String>,
+    pub block_ids: BulkArray<String>,
 }
 
-impl FromStr for BlocksInChainResponse {
-    type Err = ParseError;
-
+impl Response for BlocksInChainResponse {
     /// Parses a response string in the form
     /// `"[["alpha_numeric_block_id_string"], ["..."]]"` into a
     /// [`BlocksInChainResponse`](Self).
-    ///
-    /// ## Note
-    /// if the separator character/block ID delimiter changes in the
-    /// future to something other than `,`, this method will fail.
-    fn from_str(response_text: &str) -> Result<Self, Self::Err> {
-        let mut block_id_vec = Vec::new();
+    fn from_response_str(response: &str) -> Self {
+        let block_ids = BulkArray::from_str(response);
 
-        let mut current_block_id = String::new();
-        let block_id_separator_char = ',';
-
-        for raw_char in response_text.chars() {
-            if raw_char == block_id_separator_char {
-                let block_id_to_add = current_block_id.clone();
-                block_id_vec.push(block_id_to_add);
-                current_block_id.clear();
-            }
-            if raw_char.is_alphanumeric() {
-                current_block_id.push(raw_char);
-            }
-        }
-        // push last block ID
-        block_id_vec.push(current_block_id);
-
-        Ok(Self {
-            block_ids: block_id_vec,
-        })
+        Self { block_ids }
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    #[test]
-    fn get_blocks_in_chain_response_from_str() {
-        let mock_response = "";
-        let parse_result = BlocksInChainResponse::from_str(mock_response);
-        assert!(parse_result.is_ok());
 
-        let blocks = parse_result.unwrap();
-        assert!(blocks.block_ids.len() > 0);
+    #[test]
+    fn get_blocks_in_chain_from_response_empty_ok() {
+        let mock_response = "";
+        let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
+        let blocks = blocks_response.block_ids.into_vec();
+        assert!(blocks.is_empty());
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_empty_list_ok() {
+        let mock_response = "[]";
+        let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
+        let blocks = blocks_response.block_ids.into_vec();
+        assert!(blocks.is_empty());
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_blocks_in_chain_from_malformed_response_fails() {
+        let mock_response = "[[]]";
+        BlocksInChainResponse::from_response_str(mock_response);
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_response_single_ok() {
+        let mock_block_id = "blockId1";
+        let mock_response = format!(r#"[["{}"]]"#, mock_block_id);
+
+        let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
+        let mut blocks = blocks_response.block_ids.into_vec();
+
+        assert!(blocks.len() == 1);
+
+        let parsed_block_id_result = blocks.pop();
+        assert!(parsed_block_id_result.is_some());
+
+        let parsed_block_id = parsed_block_id_result.unwrap();
+        assert_eq!(&parsed_block_id, mock_block_id);
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_response_multiple_ok() {
+        let mock_block_ids = ["blockId1", "blockId2", "blockId3"];
+        let mock_response = format!(
+            "[{}]",
+            mock_block_ids
+                .iter()
+                .map(|block_id| format!(r#"["{}"]"#, &block_id))
+                .collect::<Vec<String>>()
+                .join(",")
+        );
+
+        let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
+        let mut blocks = blocks_response.block_ids.into_vec();
+
+        assert!(blocks.len() == 3);
+
+        for mock_block_id in mock_block_ids.iter().rev() {
+            let block_id_to_compare = blocks.pop().unwrap();
+            assert_eq!(&block_id_to_compare, mock_block_id);
+        }
     }
 }

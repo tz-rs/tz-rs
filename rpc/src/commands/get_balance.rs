@@ -1,20 +1,23 @@
-use super::RPCClientCommand;
+use super::RpcClientCommand;
+use crate::responses::BalanceResponse;
+use crate::types::{Block, Chain};
+
 pub struct GetBalance {
-    pub chain_id: String,
-    pub block_id: String,
-    pub address: String,
+    pub chain_id: Chain,
+    pub block_id: Block,
+    pub contract_id: String,
 }
 
-impl RPCClientCommand for GetBalance {
+impl RpcClientCommand for GetBalance {
+    type R = BalanceResponse;
+
     fn get_url_string(&self) -> String {
         format!(
             "chains/{}/blocks/{}/context/contracts/{}/balance",
-            &self.chain_id, &self.block_id, &self.address
+            &self.chain_id.to_str(),
+            &self.block_id.to_str(),
+            &self.contract_id
         )
-    }
-
-    fn get_json_data(&self) -> Option<String> {
-        None
     }
 
     fn get_http_method(&self) -> reqwest::Method {

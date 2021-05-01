@@ -1,15 +1,16 @@
-use super::RPCClientCommand;
+use super::RpcClientCommand;
+use crate::responses::BlocksInChainResponse;
+use crate::types::Chain;
+
 pub struct GetBlocksInChain {
-    pub chain_id: String,
+    pub chain_id: Chain,
 }
 
-impl RPCClientCommand for GetBlocksInChain {
-    fn get_url_string(&self) -> String {
-        format!("chains/{}/blocks", &self.chain_id)
-    }
+impl RpcClientCommand for GetBlocksInChain {
+    type R = BlocksInChainResponse;
 
-    fn get_json_data(&self) -> Option<String> {
-        None
+    fn get_url_string(&self) -> String {
+        format!("chains/{}/blocks", self.chain_id.to_str())
     }
 
     fn get_http_method(&self) -> reqwest::Method {
