@@ -11,6 +11,7 @@
 //! - Highly configurable for different Tezos use cases
 
 pub mod commands;
+pub mod errors;
 pub mod responses;
 pub mod types;
 use commands::RpcClientCommand;
@@ -65,13 +66,14 @@ impl RpcClient {
     pub async fn execute<T: RpcClientCommand>(
         &self,
         command: &T,
-    ) -> Result<<T as RpcClientCommand>::R, reqwest::Error> {
+    ) -> Result<<T as RpcClientCommand>::R, errors::RpcError> {
         let raw_endpoint_url = format!("{}{}", self.tezos_node_url, command.get_url_string());
-        let endpoint_url = reqwest::Url::parse(&raw_endpoint_url).unwrap();
+        let endpoint_url = reqwest::Url::parse(&raw_endpoint_url)?;
+        println!("cont: {}", &endpoint_url);
 
         let request = self.client.request(command.get_http_method(), endpoint_url);
         let response_str = request.send().await?.text().await?;
 
-        Ok(command.from_response_str(&response_str))
+        Ok(command.from_response_str(&response_str)?)
     }
 }
