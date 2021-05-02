@@ -8,16 +8,16 @@ pub struct JsonArray<T> {
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_str(str_to_parse: &str) -> Result<Self, ParseError> {
-        let parse_response = serde_json::from_str(str_to_parse).unwrap_or_else(|_| json!([]));
-        let parsed_json_array = parse_response.as_array().unwrap();
+        let mut parse_response = serde_json::from_str(str_to_parse).unwrap_or_else(|_| json!([]));
+        let parsed_json_array = parse_response.as_array_mut().unwrap();
 
         let mut flattened_vec = Vec::new();
         for nested_entry in parsed_json_array {
             let parsed_item_value = match nested_entry.is_array() {
-                true => unwrap_item_in_nested_json_array(nested_entry)?,
-                false => nested_entry,
+                true => unwrap_item_in_nested_json_array(nested_entry.take())?,
+                false => nested_entry.take(),
             };
-            let converted_item: T = convert_item_value_to_type(parsed_item_value)?;
+            let converted_item: T = serde_json::from_value(parsed_item_value)?;
             flattened_vec.push(converted_item);
         }
 
@@ -29,19 +29,11 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
     }
 }
 
-fn unwrap_item_in_nested_json_array(nested_item: &Value) -> Result<&Value, ParseError> {
+fn unwrap_item_in_nested_json_array(mut nested_item: Value) -> Result<Value, ParseError> {
     let generate_none_error = |detail: &str| ParseError::ResponseParsingError(detail.to_string());
     nested_item
-        .as_array()
+        .as_array_mut()
         .ok_or_else(|| generate_none_error("invalid initial json array"))?
-        .last()
+        .pop()
         .ok_or_else(|| generate_none_error("initial json array is empty"))
-}
-
-fn convert_item_value_to_type<T: de::DeserializeOwned>(
-    item_value: &Value,
-) -> Result<T, ParseError> {
-    let item_json = json!(item_value);
-    let converted_item: T = serde_json::from_value(item_json)?;
-    Ok(converted_item)
 }
