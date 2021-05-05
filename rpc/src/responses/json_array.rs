@@ -1,6 +1,6 @@
 use super::ParseError;
 use serde::de;
-use serde_json::{self, Value};
+use serde_json::{self, json, Value};
 
 pub struct JsonArray<T> {
     flattened_vec: Vec<T>,
@@ -32,11 +32,13 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
 }
 
 fn unwrap_item_in_nested_json_array(mut nested_item: Value) -> Result<Value, ParseError> {
-    nested_item
+    let nested_array = nested_item
         .as_array_mut()
-        .ok_or_else(|| generate_none_error("invalid initial json array"))?
-        .pop()
-        .ok_or_else(|| generate_none_error("initial json array is empty"))
+        .ok_or_else(|| generate_none_error("invalid initial json array"))?;
+    match nested_array.last() {
+        Some(_) => Ok(nested_array.pop().unwrap()),
+        None => Ok(json!("")),
+    }
 }
 
 fn generate_none_error(detail: &str) -> ParseError {

@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Unistring {
   ValidUtf8(String),
@@ -11,7 +11,7 @@ impl Unistring {
   pub fn get_string(&self) -> String {
     match self {
       Self::ValidUtf8(valid_utf8) => valid_utf8.to_string(),
-      Unistring::InvalidUtf8 {
+      Self::InvalidUtf8 {
         invalid_utf8_string: invalid_bytes,
       } => get_invalid_utf8(invalid_bytes),
     }
