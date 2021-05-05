@@ -1,16 +1,18 @@
-use super::bulk_array;
+use super::json_array;
 use super::{ParseError, Response};
+use crate::types::Unistring;
 
 pub struct BlocksInChainResponse {
-    pub block_ids: bulk_array::BulkArray<String>,
+    pub block_ids: json_array::JsonArray<Unistring>,
 }
 
 impl Response for BlocksInChainResponse {
     /// Parses a response string in the form
-    /// `"[["alpha_numeric_block_id_string"], ["..."]]"` into a
+    /// `"[["alpha_numeric_block_id_string"], ["..."]]"` or
+    /// `[[{ "invalid_utf8_string": [ integer ∈ [0, 255] ... ] }], [...]]` into a
     /// [`BlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let block_ids = bulk_array::BulkArray::from_str(response)?;
+        let block_ids = json_array::JsonArray::from_str(response)?;
 
         Ok(Self { block_ids })
     }
@@ -21,19 +23,8 @@ mod test {
     use super::*;
 
     #[test]
-    fn get_blocks_in_chain_from_response_empty_ok() {
+    fn get_blocks_in_chain_from_response_empty_fail() {
         let mock_response = "";
-
-        let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
-        assert!(blocks_response.is_ok());
-
-        let blocks = blocks_response.unwrap().block_ids.into_vec();
-        assert!(blocks.is_empty());
-    }
-
-    #[test]
-    fn get_blocks_in_chain_from_response_flat_array_fails() {
-        let mock_response = r#"["blockId1"]"#;
 
         let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
         assert!(blocks_response.is_err());
@@ -50,11 +41,15 @@ mod test {
     }
 
     #[test]
-    fn get_blocks_in_chain_from_malformed_response_fails() {
+    fn get_blocks_in_chain_from_empty_bulk_array_response_ok() {
         let mock_response = "[[]]";
 
         let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
-        assert!(blocks_response.is_err());
+        assert!(blocks_response.is_ok());
+
+        let mut blocks = blocks_response.unwrap().block_ids.into_vec();
+        let parsed_block = blocks.pop().unwrap();
+        assert!(parsed_block.get_string() == "");
     }
 
     #[test]
@@ -68,11 +63,29 @@ mod test {
         let mut blocks = blocks_response.unwrap().block_ids.into_vec();
         assert!(blocks.len() == 1);
 
-        let parsed_block_id_result = blocks.pop();
-        assert!(parsed_block_id_result.is_some());
+        let parsed_block = blocks.pop();
+        assert!(parsed_block.is_some());
 
-        let parsed_block_id = parsed_block_id_result.unwrap();
-        assert_eq!(&parsed_block_id, mock_block_id);
+        let parsed_block_id = parsed_block.unwrap().get_string();
+        assert_eq!(parsed_block_id, mock_block_id);
+    }
+
+    #[test]
+    fn get_blocks_in_chain_from_invalid_utf8_response_single_ok() {
+        let mock_nested_object = r#"{ "invalid_utf8_string": [1, 2, 3, 4] }"#;
+        let mock_response = format!(r#"[[{}]]"#, mock_nested_object);
+
+        let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
+        assert!(blocks_response.is_ok());
+
+        let mut blocks = blocks_response.unwrap().block_ids.into_vec();
+        assert!(blocks.len() == 1);
+
+        let parsed_block = blocks.pop();
+        assert!(parsed_block.is_some());
+
+        let parsed_block_id = parsed_block.unwrap().get_string();
+        assert_eq!(parsed_block_id, mock_nested_object);
     }
 
     #[test]
@@ -94,8 +107,9 @@ mod test {
         assert!(blocks.len() == 3);
 
         for mock_block_id in mock_block_ids.iter().rev() {
-            let block_id_to_compare = blocks.pop().unwrap();
-            assert_eq!(&block_id_to_compare, mock_block_id);
+            let parsed_block = blocks.pop().unwrap();
+            let parsed_block_id = parsed_block.get_string();
+            assert_eq!(parsed_block_id, mock_block_id.to_string())
         }
     }
 }

@@ -1,6 +1,6 @@
 pub mod balance;
 pub mod block_ids_in_chain;
-mod bulk_array;
+mod json_array;
 use crate::errors::ParseError;
 pub use balance::BalanceResponse;
 pub use block_ids_in_chain::BlocksInChainResponse;
