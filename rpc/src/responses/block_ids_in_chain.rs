@@ -23,14 +23,11 @@ mod test {
     use super::*;
 
     #[test]
-    fn get_blocks_in_chain_from_response_empty_ok() {
+    fn get_blocks_in_chain_from_response_empty_fail() {
         let mock_response = "";
 
         let blocks_response = BlocksInChainResponse::from_response_str(mock_response);
-        assert!(blocks_response.is_ok());
-
-        let blocks = blocks_response.unwrap().block_ids.into_vec();
-        assert!(blocks.is_empty());
+        assert!(blocks_response.is_err());
     }
 
     #[test]

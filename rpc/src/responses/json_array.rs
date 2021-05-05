@@ -1,6 +1,6 @@
 use super::ParseError;
 use serde::de;
-use serde_json::{self, json, Value};
+use serde_json::{self, Value};
 
 pub struct JsonArray<T> {
     flattened_vec: Vec<T>,
@@ -8,8 +8,10 @@ pub struct JsonArray<T> {
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_str(str_to_parse: &str) -> Result<Self, ParseError> {
-        let mut parse_response = serde_json::from_str(str_to_parse).unwrap_or_else(|_| json!([]));
-        let parsed_json_array = parse_response.as_array_mut().unwrap();
+        let mut parse_response = serde_json::from_str::<Value>(str_to_parse)?;
+        let parsed_json_array = parse_response
+            .as_array_mut()
+            .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))?;
 
         let mut flattened_vec = Vec::new();
         for nested_entry in parsed_json_array {
@@ -30,10 +32,13 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
 }
 
 fn unwrap_item_in_nested_json_array(mut nested_item: Value) -> Result<Value, ParseError> {
-    let generate_none_error = |detail: &str| ParseError::ResponseParsingError(detail.to_string());
     nested_item
         .as_array_mut()
         .ok_or_else(|| generate_none_error("invalid initial json array"))?
         .pop()
         .ok_or_else(|| generate_none_error("initial json array is empty"))
+}
+
+fn generate_none_error(detail: &str) -> ParseError {
+    ParseError::ResponseParsingError(detail.to_string())
 }
