@@ -1,5 +1,5 @@
 use crate::commands::RpcClientCommand;
-use crate::responses::BlocksInChainResponse;
+use crate::responses::chains::blocks::block_ids_in_chain::BlocksInChainResponse;
 use crate::types::Chain;
 
 pub struct GetBlocksInChain {

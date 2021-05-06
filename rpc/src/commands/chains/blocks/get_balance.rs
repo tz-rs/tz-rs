@@ -1,5 +1,5 @@
 use crate::commands::RpcClientCommand;
-use crate::responses::BalanceResponse;
+use crate::responses::chains::blocks::balance::BalanceResponse;
 use crate::types::{Block, Chain};
 
 pub struct GetBalance {
