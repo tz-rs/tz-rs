@@ -1,5 +1,5 @@
-use super::json_array;
-use super::{ParseError, Response};
+use crate::errors::ParseError;
+use crate::responses::{Response, json_array};
 use crate::types::Unistring;
 
 pub struct BlocksInChainResponse {
