@@ -1,4 +1,4 @@
-use super::RpcClientCommand;
+use crate::commands::RpcClientCommand;
 use crate::responses::BlocksInChainResponse;
 use crate::types::Chain;
 
