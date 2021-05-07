@@ -1,9 +1,6 @@
-pub mod balance;
-pub mod block_ids_in_chain;
+pub mod chains;
 mod json_array;
 use crate::errors::ParseError;
-pub use balance::BalanceResponse;
-pub use block_ids_in_chain::BlocksInChainResponse;
 
 pub trait Response {
     fn from_response_str(response: &str) -> Result<Self, ParseError>

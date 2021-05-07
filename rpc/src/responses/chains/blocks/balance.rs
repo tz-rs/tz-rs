@@ -1,5 +1,5 @@
-use super::ParseError;
-use super::Response;
+use crate::errors::ParseError;
+use crate::responses::Response;
 
 #[derive(Debug)]
 pub struct BalanceResponse {

@@ -1,5 +1,5 @@
 use super::*;
-use commands::GetBlocksInChain;
+use commands::chains::blocks::get_blocks_in_chain::GetBlocksInChain;
 
 #[tokio::test]
 async fn get_blocks_in_chain_ok() {

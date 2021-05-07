@@ -1,10 +1,7 @@
 use crate::errors::ParseError;
 use crate::responses::Response;
 
-mod get_balance;
-mod get_blocks_in_chain;
-pub use get_balance::GetBalance;
-pub use get_blocks_in_chain::GetBlocksInChain;
+pub mod chains;
 
 pub trait RpcClientCommand {
     type R: Response;

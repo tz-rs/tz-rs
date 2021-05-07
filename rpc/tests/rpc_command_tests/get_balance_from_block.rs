@@ -1,5 +1,5 @@
 use super::*;
-use commands::GetBalance;
+use commands::chains::blocks::get_balance::GetBalance;
 
 #[tokio::test]
 async fn get_balance_for_bob_ok() {
