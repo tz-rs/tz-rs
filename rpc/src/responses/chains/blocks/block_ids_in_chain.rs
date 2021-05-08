@@ -1,5 +1,5 @@
 use crate::errors::ParseError;
-use crate::responses::{Response, json_array};
+use crate::responses::{json_array, Response};
 use crate::types::Unistring;
 
 pub struct BlocksInChainResponse {
@@ -72,7 +72,7 @@ mod test {
 
     #[test]
     fn get_blocks_in_chain_from_invalid_utf8_response_single_ok() {
-        let mock_nested_object = r#"{ "invalid_utf8_string": [1, 2, 3, 4] }"#;
+        let mock_nested_object = r#"{"invalid_utf8_string":[1,2,3,4]}"#;
         let mock_response = format!(r#"[[{}]]"#, mock_nested_object);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
