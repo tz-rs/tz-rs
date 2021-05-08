@@ -1,7 +1,8 @@
 use crate::errors::ParseError;
-use crate::responses::{Response, json_array};
+use crate::responses::{json_array, Response};
 use crate::types::Unistring;
 
+#[derive(Debug)]
 pub struct BlocksInChainResponse {
     pub block_ids: json_array::JsonArray<Unistring>,
 }

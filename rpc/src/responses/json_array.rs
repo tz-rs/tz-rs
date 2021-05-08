@@ -2,6 +2,7 @@ use super::ParseError;
 use serde::de;
 use serde_json::{self, json, Value};
 
+#[derive(Debug)]
 pub struct JsonArray<T> {
     flattened_vec: Vec<T>,
 }
