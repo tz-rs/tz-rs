@@ -12,8 +12,8 @@ async fn get_invalid_blocks_in_chain_ok() {
 	assert!(client_response.is_ok());
 
 	let invalid_blocks_response = client_response.unwrap();
-	let blocks = invalid_blocks_response.invalid_blocks.into_vec();
-	assert!(blocks.len() == 0);
+	let invalid_blocks = invalid_blocks_response.invalid_blocks.into_vec();
+	assert!(invalid_blocks.len() == 0);
 }
 
 fn generate_get_blocks_command_for_main_chain() -> GetInvalidBlocksInChain {
