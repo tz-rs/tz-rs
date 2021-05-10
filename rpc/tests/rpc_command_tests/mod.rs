@@ -26,7 +26,7 @@ fn is_testing_on_cloud() -> bool {
 }
 
 fn get_public_testnet_url() -> Url {
-    Url::parse("https://tezos-florence.cryptonomic-infra.tech:443").unwrap()
+    Url::parse("https://rpcalpha.tzbeta.net").unwrap()
 }
 fn get_local_testnet_url() -> Url {
     Url::parse("http://localhost:8090").unwrap()
