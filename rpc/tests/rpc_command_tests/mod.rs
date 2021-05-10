@@ -4,6 +4,7 @@ use url::Url;
 
 mod get_balance_from_block;
 mod get_blocks_in_chain;
+mod get_current_checkpoint;
 
 fn get_rpc_client() -> RpcClient {
     let tezos_node_url = get_tezos_node_url_for_test();
@@ -26,7 +27,7 @@ fn is_testing_on_cloud() -> bool {
 }
 
 fn get_public_testnet_url() -> Url {
-    Url::parse("https://rpcalpha.tzbeta.net").unwrap()
+    Url::parse("https://tezos-florence.cryptonomic-infra.tech:443").unwrap()
 }
 fn get_local_testnet_url() -> Url {
     Url::parse("http://localhost:8090").unwrap()
