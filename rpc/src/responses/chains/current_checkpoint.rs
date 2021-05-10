@@ -31,10 +31,6 @@ pub struct CurrentCheckpointResponse {
 impl Response for CurrentCheckpointResponse {
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
         let mut parse_response: serde_json::Value = serde_json::from_str(response)?;
-        // let block_fitness: Vec<String> = Vec::new();
-        // for fitness in parse_response["block"]["fitness"] {
-        //     block_fitness.push(fitness.from_value().as_str());
-        // }
         let mut block_parse_response = parse_response["block"].take();
         let block = Block {
             level: serde_json::from_value(block_parse_response["level"].take())?,
@@ -46,7 +42,7 @@ impl Response for CurrentCheckpointResponse {
             protocol_data: serde_json::from_value(block_parse_response["protocol_data"].take())?,
         };
         let history_mode_from_value =
-            serde_json::from_value::<String>(parse_response["save_point"].take())?;
+            serde_json::from_value::<String>(parse_response["history_mode"].take())?;
         let history_mode = match history_mode_from_value.as_str() {
             "full" => Ok(HistoryMode::Full),
             "archive" => Ok(HistoryMode::Archive),
@@ -73,39 +69,83 @@ impl Response for CurrentCheckpointResponse {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_current_checkpoint_from_response_empty_fail() {
+        let mock_response = "";
+
+        let response = CurrentCheckpointResponse::from_response_str(mock_response);
+        assert!(response.is_err());
+    }
+
+    #[test]
+    fn test_current_checkpoint_from_malformed_response_fail() {
+        let mock_response = get_invalid_mock_checkpoint_json();
+        
+        let response = CurrentCheckpointResponse::from_response_str(mock_response);
+        assert!(response.is_err());
+    }
+
     #[test]
     fn test_valid_checkpoint_parse_ok() {
-        let mock_response = r#"{
+        let mock_response = get_valid_mock_checkpoint_json();
+        let expected_response = get_mock_checkpoint_struct();
+        let response_result = CurrentCheckpointResponse::from_response_str(&mock_response);
+        assert!(response_result.is_ok());
+
+        let response = response_result.unwrap();
+        assert_eq!(response, expected_response);
+    }
+
+    fn get_valid_mock_checkpoint_json() -> &'static str {
+        r#"{
             "block": {
               "level": 0,
               "proto": 0,
               "validation_pass": 0,
               "fitness": [
-                "string"
+                "string",
+                "string2"
               ],
               "protocol_data": "string"
             },
             "save_point": 0,
             "caboose": 0,
             "history_mode": "full"
-          }"#;
+          }"#
+    }
+
+    fn get_invalid_mock_checkpoint_json() -> &'static str {
+        r#"{
+            "block": {
+              "level": "string",
+              "proto": "string",
+              "validation_pass": 0,
+              "fitness": [
+                "string",
+                "string2"
+              ],
+              "protocol_data": "string"
+            },
+            "save_point": 0,
+            "caboose": 0,
+            "history_mode": "full"
+          }"#
+    }
+
+    fn get_mock_checkpoint_struct() -> CurrentCheckpointResponse {
         let block = Block {
             level: 0,
             proto: 0,
             validation_pass: 0,
-            fitness: vec!["string".to_string()],
+            fitness: vec!["string".to_string(), "string2".to_string()],
             protocol_data: "string".to_string(),
         };
-        let expected_response = CurrentCheckpointResponse {
+        CurrentCheckpointResponse {
             block: block,
             save_point: 0,
             caboose: 0,
             history_mode: HistoryMode::Full,
-        };
-        let response_result = CurrentCheckpointResponse::from_response_str(&mock_response);
-        assert!(response_result.is_ok());
-
-        let response = response_result.unwrap();
-        assert_eq!(response, expected_response);
+        }
     }
 }
