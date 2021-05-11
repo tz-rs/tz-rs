@@ -52,7 +52,6 @@ impl Response for CurrentCheckpointResponse {
             context: serde_json::from_value(block_parse_response["context"].take())?,
             protocol_data: serde_json::from_value(block_parse_response["protocol_data"].take())?,
         };
-        println!("{:?}", block);
         let history_mode_from_value =
             serde_json::from_value::<String>(parse_response["history_mode"].take())?;
         let history_mode = match history_mode_from_value.as_str() {
