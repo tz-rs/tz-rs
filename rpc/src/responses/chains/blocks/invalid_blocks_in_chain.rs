@@ -2,8 +2,9 @@ use crate::errors::ParseError;
 use crate::responses::{json_array, Response};
 use crate::types::Unistring;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Serialize, Deserialize)]
 pub struct InvalidBlockError {
@@ -15,11 +16,23 @@ pub struct InvalidBlockError {
 	pub extra_error_info: HashMap<String, Value>,
 }
 
+impl fmt::Display for InvalidBlockError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", json!(self).to_string())
+	}
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct InvalidBlock {
 	pub block: Unistring,
 	pub level: i32,
 	pub errors: InvalidBlockError,
+}
+
+impl fmt::Display for InvalidBlock {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", json!(self).to_string())
+	}
 }
 
 pub struct InvalidBlocksInChainResponse {
@@ -42,7 +55,6 @@ impl Response for InvalidBlocksInChainResponse {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use serde_json::json;
 
 	fn get_mock_error_response(
 		mock_kind: &str,
@@ -77,15 +89,6 @@ mod test {
 		);
 
 		mock_response.replace('\n', "").replace('\t', "")
-	}
-
-	fn check_mock_error_json_matches_error_response(
-		invalid_block_errors: InvalidBlockError,
-		mock_error_response: &str,
-	) -> bool {
-		let invalid_block_errors_json = json!(invalid_block_errors).to_string();
-
-		invalid_block_errors_json == mock_error_response
 	}
 
 	#[test]
@@ -126,13 +129,8 @@ mod test {
 		assert!(invalid_blocks.len() == 1);
 
 		let invalid_block = invalid_blocks.pop().unwrap();
-		assert!(invalid_block.block.to_string() == mock_block);
-		assert!(invalid_block.level == mock_level);
-
-		let invalid_block_errors = invalid_block.errors;
-		let mock_error_matches_error_response =
-			check_mock_error_json_matches_error_response(invalid_block_errors, &mock_error_response);
-		assert!(mock_error_matches_error_response);
+		let invalid_block_array_str = format!("[{}]", invalid_block.to_string());
+		assert_eq!(invalid_block_array_str, mock_response);
 	}
 
 	#[test]

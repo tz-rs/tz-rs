@@ -1,9 +1,19 @@
 use crate::errors::ParseError;
 use crate::responses::{json_array, Response};
 use crate::types::Unistring;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::fmt;
 
+#[derive(Serialize, Deserialize)]
 pub struct BlocksInChainResponse {
     pub block_ids: json_array::JsonArray<Unistring>,
+}
+
+impl fmt::Display for BlocksInChainResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", json!(self).to_string())
+    }
 }
 
 impl Response for BlocksInChainResponse {
