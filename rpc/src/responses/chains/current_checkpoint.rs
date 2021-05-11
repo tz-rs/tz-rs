@@ -1,5 +1,6 @@
 use crate::errors::ParseError;
 use crate::responses::Response;
+use crate::types::Unistring;
 use serde::{Deserialize, Serialize};
 use serde_json::{self};
 
@@ -7,9 +8,13 @@ use serde_json::{self};
 
 pub struct Block {
     pub level: i32,
-    pub proto: i32,
-    pub validation_pass: i32,
+    pub proto: u8,
+    pub predecessor: Unistring,
+    pub timestamp: Unistring,
+    pub validation_pass: u8,
+    pub operations_hash: Unistring,
     pub fitness: Vec<String>,
+    pub context: Unistring,
     pub protocol_data: String,
 }
 
@@ -39,14 +44,20 @@ impl Response for CurrentCheckpointResponse {
         let block = Block {
             level: serde_json::from_value(block_parse_response["level"].take())?,
             proto: serde_json::from_value(block_parse_response["proto"].take())?,
+            predecessor: serde_json::from_value(block_parse_response["predecessor"].take())?,
+            timestamp: serde_json::from_value(block_parse_response["timestamp"].take())?,
             validation_pass: serde_json::from_value(
                 block_parse_response["validation_pass"].take(),
             )?,
+            operations_hash: serde_json::from_value(
+                block_parse_response["operations_hash"].take(),
+            )?,
             fitness: serde_json::from_value(block_parse_response["fitness"].take())?,
+            context: serde_json::from_value(block_parse_response["context"].take())?,
             protocol_data: serde_json::from_value(block_parse_response["protocol_data"].take())?,
         };
         let history_mode_from_value =
-            serde_json::from_value::<String>(parse_response["save_point"].take())?;
+            serde_json::from_value::<String>(parse_response["history_mode"].take())?;
         let history_mode = match history_mode_from_value.as_str() {
             "full" => Ok(HistoryMode::Full),
             "archive" => Ok(HistoryMode::Archive),
@@ -79,10 +90,14 @@ mod test {
             "block": {
               "level": 0,
               "proto": 0,
+              "predecessor": "blockId",
+                "timestamp": "10pm",
               "validation_pass": 0,
+              "operations_hash": "ophash",
               "fitness": [
                 "string"
               ],
+              "context": "context",
               "protocol_data": "string"
             },
             "save_point": 0,
@@ -92,8 +107,12 @@ mod test {
         let block = Block {
             level: 0,
             proto: 0,
+            predecessor: Unistring::ValidUtf8("blockId".to_string()),
+            timestamp: Unistring::ValidUtf8("10pm".to_string()),
             validation_pass: 0,
+            operations_hash: Unistring::ValidUtf8("ophash".to_string()),
             fitness: vec!["string".to_string()],
+            context: Unistring::ValidUtf8("context".to_string()),
             protocol_data: "string".to_string(),
         };
         let expected_response = CurrentCheckpointResponse {
