@@ -5,7 +5,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct JsonArray<T> {
-    flattened_vec: Vec<T>,
+    nested_vec: Vec<Vec<T>>,
 }
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
@@ -21,7 +21,6 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
                 true => unwrap_item_in_nested_json_array(nested_entry.take())?,
                 false => nested_entry.take(),
             };
-            let converted_item: T = serde_json::from_value(parsed_item_value)?;
             flattened_vec.push(converted_item);
         }
 
@@ -45,22 +44,21 @@ impl<T: fmt::Display> fmt::Display for JsonArray<T> {
     }
 }
 
-// fn unwrap_item_in_nested_json_array<T: de::DeserializeOwned>(
-// mut nested_item: Value,
-// ) -> Result<T, ParseError> {
-fn unwrap_item_in_nested_json_array(mut nested_item: Value) -> Result<Value, ParseError> {
+fn unwrap_item_in_nested_json_array<T: de::DeserializeOwned>(
+    mut nested_item: Value,
+) -> Result<T, ParseError> {
     let nested_array = nested_item
         .as_array_mut()
         .ok_or_else(|| generate_none_error("invalid initial json array"))?;
 
-    // for item in nested_array {
-    // let converted_item: T = serde_json::from_value(
-    // }
-
-    match nested_array.last() {
-        Some(_) => Ok(nested_array.pop().unwrap()),
-        None => Ok(json!("")),
+    for item in nested_array {
+        let converted_item: T = serde_json::from_value(item);
     }
+
+    // match nested_array.last() {
+    // Some(_) => Ok(nested_array.pop().unwrap()),
+    // None => Ok(json!("")),
+    // }
 }
 
 fn generate_none_error(detail: &str) -> ParseError {
