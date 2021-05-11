@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Serialize, Deserialize)]
 pub struct ResponseError {
@@ -16,8 +17,8 @@ pub struct ResponseError {
   additional_properties: bool,
 }
 
-impl ResponseError {
-  pub fn to_string(&self) -> String {
-    json!(self).to_string()
+impl fmt::Display for ResponseError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", json!(self).to_string())
   }
 }

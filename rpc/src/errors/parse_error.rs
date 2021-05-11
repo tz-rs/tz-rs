@@ -27,6 +27,6 @@ impl From<serde_json::Error> for ParseError {
 impl Error for ParseError {}
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error parsing or flattening JSON array text")
+        write!(f, "Error parsing or flattening JSON text")
     }
 }

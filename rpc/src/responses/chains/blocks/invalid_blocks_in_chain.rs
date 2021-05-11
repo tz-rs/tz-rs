@@ -92,8 +92,8 @@ mod test {
 	fn get_invalid_blocks_in_chain_from_response_empty_fails() {
 		let mock_response = "";
 
-		let blocks_response = InvalidBlocksInChainResponse::from_response_str(mock_response);
-		assert!(blocks_response.is_err());
+		let invalid_blocks_response = InvalidBlocksInChainResponse::from_response_str(mock_response);
+		assert!(invalid_blocks_response.is_err());
 	}
 
 	#[test]

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::fmt;
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8,13 +9,13 @@ pub enum Unistring {
   InvalidUtf8 { invalid_utf8_string: Vec<u8> },
 }
 
-impl Unistring {
-  pub fn to_string(&self) -> String {
+impl fmt::Display for Unistring {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Self::ValidUtf8(valid_utf8) => valid_utf8.to_string(),
+      Self::ValidUtf8(valid_utf8) => write!(f, "{}", valid_utf8.to_string()),
       Self::InvalidUtf8 {
         invalid_utf8_string: _,
-      } => json!(self).to_string(),
+      } => write!(f, "{}", json!(self).to_string()),
     }
   }
 }
