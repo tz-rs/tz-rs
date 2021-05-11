@@ -12,7 +12,7 @@ impl Response for BlocksInChainResponse {
     /// `[[{ "invalid_utf8_string": [ integer ∈ [0, 255] ... ] }], [...]]` into a
     /// [`BlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let block_ids = json_array::JsonArray::from_str(response)?;
+        let block_ids = json_array::JsonArray::from_response(response)?;
 
         Ok(Self { block_ids })
     }

@@ -33,7 +33,7 @@ impl Response for InvalidBlocksInChainResponse {
 	///      "errors": $error }, ...]"` into a
 	/// [`InvalidBlocksInChainResponse`](Self).
 	fn from_response_str(response: &str) -> Result<Self, ParseError> {
-		let invalid_blocks = json_array::JsonArray::from_str(response)?;
+		let invalid_blocks = json_array::JsonArray::from_response(response)?;
 
 		Ok(Self { invalid_blocks })
 	}
