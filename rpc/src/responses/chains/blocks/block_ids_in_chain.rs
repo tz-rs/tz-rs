@@ -9,7 +9,7 @@ pub struct BlocksInChainResponse {
 
 impl Response for BlocksInChainResponse {
     /// Parses a response string in the form
-    /// `"[["alpha_numeric_block_id_string"], ["..."]]"` or
+    /// `"[["alpha_numeric_block_id_string", "..."], ["...", "..."]]"` or
     /// `[[{ "invalid_utf8_string": [ integer ∈ [0, 255] ... ] }], [...]]` into a
     /// [`BlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {

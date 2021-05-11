@@ -2,10 +2,18 @@ use super::block_responses::BlocksInChainResponse;
 use crate::commands::RpcClientCommand;
 use crate::types::Chain;
 use chrono::NaiveDateTime;
+use querystring;
 
 type BlockHash = String;
 
 #[derive(Debug)]
+/// Command for the [`/chains/{chain_id}/blocks` endpoint](https://tezos.gitlab.io/shell/rpc.html#get-chains-chain-id-blocks).
+///
+/// Requires a valid [`chain_id`](Chain) to form the URL string
+///
+/// Can optionally hold extra query parameters with
+/// [an explicit constructor](Self::with_explicit_params),
+/// or default to sending no args with [the default constructor](Self::with_default_params)
 pub struct GetBlocksInChain {
     pub chain_id: Chain,
     params: Option<GetBlocksInChainParameters>,
@@ -20,19 +28,21 @@ struct GetBlocksInChainParameters {
 
 impl GetBlocksInChainParameters {
     fn to_url_string(&self) -> String {
-        let mut base_url = String::new();
+        let mut query_pairs = Vec::new();
 
         if let Some(length) = &self.length {
-            base_url.push_str(&length.to_string());
+            query_pairs.push(("length", length.to_string()));
         }
         if let Some(head) = &self.head {
-            base_url.push_str(&head);
+            query_pairs.push(("head", head.to_string()));
         }
         if let Some(min_date) = &self.min_date {
-            base_url.push_str(&min_date.timestamp().to_string());
+            query_pairs.push(("min_date", min_date.timestamp().to_string()));
         }
 
-        base_url
+        let query_params = query_pairs.iter().map(|x| (x.0, x.1.as_str())).collect();
+
+        querystring::stringify(query_params)
     }
 }
 
