@@ -1,5 +1,5 @@
 pub mod chains;
-mod json_array;
+pub mod json_array;
 use crate::errors::ParseError;
 
 pub trait Response {

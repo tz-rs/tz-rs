@@ -9,7 +9,7 @@ pub enum Unistring {
 }
 
 impl Unistring {
-  pub fn get_string(&self) -> String {
+  pub fn to_string(&self) -> String {
     match self {
       Self::ValidUtf8(valid_utf8) => valid_utf8.to_string(),
       Self::InvalidUtf8 {

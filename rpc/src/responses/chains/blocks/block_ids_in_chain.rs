@@ -49,7 +49,7 @@ mod test {
 
         let mut blocks = blocks_response.unwrap().block_ids.into_vec();
         let parsed_block = blocks.pop().unwrap();
-        assert!(parsed_block.get_string() == "");
+        assert!(parsed_block.to_string() == "");
     }
 
     #[test]
@@ -66,7 +66,7 @@ mod test {
         let parsed_block = blocks.pop();
         assert!(parsed_block.is_some());
 
-        let parsed_block_id = parsed_block.unwrap().get_string();
+        let parsed_block_id = parsed_block.unwrap().to_string();
         assert_eq!(parsed_block_id, mock_block_id);
     }
 
@@ -84,7 +84,7 @@ mod test {
         let parsed_block = blocks.pop();
         assert!(parsed_block.is_some());
 
-        let parsed_block_id = parsed_block.unwrap().get_string();
+        let parsed_block_id = parsed_block.unwrap().to_string();
         assert_eq!(parsed_block_id, mock_nested_object);
     }
 
@@ -108,8 +108,8 @@ mod test {
 
         for mock_block_id in mock_block_ids.iter().rev() {
             let parsed_block = blocks.pop().unwrap();
-            let parsed_block_id = parsed_block.get_string();
-            assert_eq!(parsed_block_id, mock_block_id.to_string())
+            let parsed_block_id = parsed_block.to_string();
+            assert_eq!(parsed_block_id, mock_block_id.to_string());
         }
     }
 }

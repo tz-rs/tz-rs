@@ -17,7 +17,7 @@ pub struct ResponseError {
 }
 
 impl ResponseError {
-  pub fn get_string(&self) -> String {
+  pub fn to_string(&self) -> String {
     json!(self).to_string()
   }
 }
