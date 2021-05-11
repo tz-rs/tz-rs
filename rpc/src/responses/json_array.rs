@@ -8,7 +8,7 @@ pub struct JsonArray<T> {
 }
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
-    pub fn from_response(str_to_parse: &str) -> Result<Self, ParseError> {
+    pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
         let mut parse_response = serde_json::from_str::<Value>(str_to_parse)?;
         let parsed_json_array = parse_response
             .as_array_mut()

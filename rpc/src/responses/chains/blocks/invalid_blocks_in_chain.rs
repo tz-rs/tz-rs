@@ -46,7 +46,7 @@ impl Response for InvalidBlocksInChainResponse {
 	///      "errors": $error }, ...]"` into a
 	/// [`InvalidBlocksInChainResponse`](Self).
 	fn from_response_str(response: &str) -> Result<Self, ParseError> {
-		let invalid_blocks = json_array::JsonArray::from_response(response)?;
+		let invalid_blocks = json_array::JsonArray::from_response_str(response)?;
 
 		Ok(Self { invalid_blocks })
 	}
@@ -129,7 +129,7 @@ mod test {
 		assert!(invalid_blocks.len() == 1);
 
 		let invalid_block = invalid_blocks.pop().unwrap();
-		let invalid_block_array_str = format!("[{}]", invalid_block.to_string());
+		let invalid_block_array_str = format!("[{}]", invalid_block);
 		assert_eq!(invalid_block_array_str, mock_response);
 	}
 
