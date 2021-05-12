@@ -2,7 +2,8 @@ use crate::errors::ParseError;
 use crate::responses::Response;
 use crate::types::Unistring;
 use serde::{Deserialize, Serialize};
-use serde_json::{self};
+use serde_json::{self, json};
+use std::fmt;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 
@@ -18,11 +19,27 @@ pub struct Block {
     pub protocol_data: String,
 }
 
+impl fmt::Display for Block {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", json!(self).to_string())
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum HistoryMode {
     Full,
     Archive,
     Rolling,
+}
+
+impl fmt::Display for HistoryMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            Self::Full => write!(f, "full"),
+            Self::Archive => write!(f, "archive"),
+            Self::Rolling => write!(f, "rolling"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -31,6 +48,12 @@ pub struct CurrentCheckpointResponse {
     pub save_point: i32,
     pub caboose: i32,
     pub history_mode: HistoryMode,
+}
+
+impl fmt::Display for CurrentCheckpointResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", json!(self).to_string())
+    }
 }
 
 impl Response for CurrentCheckpointResponse {
@@ -80,6 +103,18 @@ impl Response for CurrentCheckpointResponse {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_current_checkpoint_fmt_to_response_ok() {
+        let expected_response = get_mock_checkpoint_struct();
+        let expected_response_string = format!("{}", expected_response);
+        let response_result =
+            CurrentCheckpointResponse::from_response_str(&expected_response_string);
+        assert!(response_result.is_ok());
+
+        let response = response_result.unwrap();
+        assert_eq!(expected_response, response);
+    }
 
     #[test]
     fn test_current_checkpoint_from_response_empty_fail() {
