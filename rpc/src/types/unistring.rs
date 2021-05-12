@@ -1,30 +1,21 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::fmt;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(untagged)]
 pub enum Unistring {
-  ValidUtf8(String),
-  InvalidUtf8 { invalid_utf8_string: Vec<u8> },
+    ValidUtf8(String),
+    InvalidUtf8 { invalid_utf8_string: Vec<u8> },
 }
 
-impl Unistring {
-  pub fn get_string(&self) -> String {
-    match self {
-      Self::ValidUtf8(valid_utf8) => valid_utf8.to_string(),
-      Self::InvalidUtf8 {
-        invalid_utf8_string: invalid_bytes,
-      } => get_invalid_utf8(invalid_bytes),
+impl fmt::Display for Unistring {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ValidUtf8(valid_utf8) => write!(f, "{}", valid_utf8.to_string()),
+            Self::InvalidUtf8 {
+                invalid_utf8_string: _,
+            } => write!(f, "{}", json!(self).to_string()),
+        }
     }
-  }
-}
-
-fn get_invalid_utf8(invalid_bytes: &[u8]) -> String {
-  format!(
-    r#"{{ "invalid_utf8_string": [{}] }}"#,
-    invalid_bytes
-      .iter()
-      .map(|byte| byte.to_string())
-      .collect::<Vec<String>>()
-      .join(", ")
-  )
 }

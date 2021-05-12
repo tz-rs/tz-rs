@@ -1,0 +1,209 @@
+use crate::errors::ParseError;
+use crate::responses::Response;
+use crate::types::Unistring;
+use serde::{Deserialize, Serialize};
+use serde_json::{self, json};
+use std::fmt;
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+
+pub struct Block {
+    pub level: i32,
+    pub proto: u8,
+    pub predecessor: Unistring,
+    pub timestamp: Unistring,
+    pub validation_pass: u8,
+    pub operations_hash: Unistring,
+    pub fitness: Vec<String>,
+    pub context: Unistring,
+    pub protocol_data: String,
+}
+
+impl fmt::Display for Block {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", json!(self).to_string())
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum HistoryMode {
+    #[serde(rename(serialize = "full", deserialize = "full"))]
+    Full,
+    #[serde(rename(serialize = "archive", deserialize = "archive"))]
+    Archive,
+    #[serde(rename(serialize = "rolling", deserialize = "rolling"))]
+    Rolling,
+}
+
+impl fmt::Display for HistoryMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            Self::Full => write!(f, "full"),
+            Self::Archive => write!(f, "archive"),
+            Self::Rolling => write!(f, "rolling"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct CurrentCheckpointResponse {
+    pub block: Block,
+    pub save_point: i32,
+    pub caboose: i32,
+    pub history_mode: HistoryMode,
+}
+
+impl fmt::Display for CurrentCheckpointResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", json!(self).to_string())
+    }
+}
+
+impl Response for CurrentCheckpointResponse {
+    fn from_response_str(response: &str) -> Result<Self, ParseError> {
+        let mut parse_response: serde_json::Value = serde_json::from_str(response)?;
+        let mut block_parse_response = parse_response["block"].take();
+        let block = Block {
+            level: serde_json::from_value(block_parse_response["level"].take())?,
+            proto: serde_json::from_value(block_parse_response["proto"].take())?,
+            predecessor: serde_json::from_value(block_parse_response["predecessor"].take())?,
+            timestamp: serde_json::from_value(block_parse_response["timestamp"].take())?,
+            validation_pass: serde_json::from_value(
+                block_parse_response["validation_pass"].take(),
+            )?,
+            operations_hash: serde_json::from_value(
+                block_parse_response["operations_hash"].take(),
+            )?,
+            fitness: serde_json::from_value(block_parse_response["fitness"].take())?,
+            context: serde_json::from_value(block_parse_response["context"].take())?,
+            protocol_data: serde_json::from_value(block_parse_response["protocol_data"].take())?,
+        };
+        let history_mode_from_value =
+            serde_json::from_value::<String>(parse_response["history_mode"].take())?;
+        let history_mode = match history_mode_from_value.as_str() {
+            "full" => Ok(HistoryMode::Full),
+            "archive" => Ok(HistoryMode::Archive),
+            "rolling" => Ok(HistoryMode::Rolling),
+            _ => {
+                let detail = format!(
+                    "response is not a proper history mode. response: {}",
+                    response
+                );
+                Err(ParseError::ResponseParsingError(detail))
+            }
+        }?;
+        let save_point = serde_json::from_value(parse_response["save_point"].take())?;
+        let caboose = serde_json::from_value(parse_response["caboose"].take())?;
+        Ok(Self {
+            block,
+            save_point,
+            caboose,
+            history_mode,
+        })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_current_checkpoint_fmt_to_response_ok() {
+        let expected_response = get_mock_checkpoint_struct();
+        let expected_response_string = format!("{}", expected_response);
+        let response_result =
+            CurrentCheckpointResponse::from_response_str(&expected_response_string);
+        assert!(response_result.is_ok());
+
+        let response = response_result.unwrap();
+        assert_eq!(expected_response, response);
+    }
+
+    #[test]
+    fn test_current_checkpoint_from_response_empty_fail() {
+        let mock_response = "";
+
+        let response = CurrentCheckpointResponse::from_response_str(mock_response);
+        assert!(response.is_err());
+    }
+
+    #[test]
+    fn test_current_checkpoint_from_malformed_response_fail() {
+        let mock_response = get_invalid_mock_checkpoint_json();
+
+        let response = CurrentCheckpointResponse::from_response_str(mock_response);
+        assert!(response.is_err());
+    }
+
+    #[test]
+    fn test_valid_checkpoint_parse_ok() {
+        let mock_response = get_valid_mock_checkpoint_json();
+        let expected_response = get_mock_checkpoint_struct();
+        let response_result = CurrentCheckpointResponse::from_response_str(&mock_response);
+        assert!(response_result.is_ok());
+
+        let response = response_result.unwrap();
+        assert_eq!(response, expected_response);
+    }
+
+    fn get_valid_mock_checkpoint_json() -> &'static str {
+        r#"{
+            "block": {
+                "level": 0,
+                "proto": 0,
+                "predecessor": "blockId",
+                "timestamp": "10pm",
+                "validation_pass": 0,
+                "operations_hash": "ophash",
+                "fitness": [
+                    "string",
+                    "string2"
+                ],
+                "context": "context",
+                "protocol_data": "string"
+            },
+            "save_point": 0,
+            "caboose": 0,
+            "history_mode": "full"
+          }"#
+    }
+
+    fn get_invalid_mock_checkpoint_json() -> &'static str {
+        r#"{
+            "block": {
+              "level": "string",
+              "proto": "string",
+              "validation_pass": 0,
+              "fitness": [
+                "string",
+                "string2"
+              ],
+              "context": "context",
+              "protocol_data": "string"
+            },
+            "save_point": 0,
+            "caboose": 0,
+            "history_mode": "full"
+          }"#
+    }
+
+    fn get_mock_checkpoint_struct() -> CurrentCheckpointResponse {
+        let block = Block {
+            level: 0,
+            proto: 0,
+            predecessor: Unistring::ValidUtf8("blockId".to_string()),
+            timestamp: Unistring::ValidUtf8("10pm".to_string()),
+            validation_pass: 0,
+            operations_hash: Unistring::ValidUtf8("ophash".to_string()),
+            fitness: vec!["string".to_string(), "string2".to_string()],
+            context: Unistring::ValidUtf8("context".to_string()),
+            protocol_data: "string".to_string(),
+        };
+        CurrentCheckpointResponse {
+            block: block,
+            save_point: 0,
+            caboose: 0,
+            history_mode: HistoryMode::Full,
+        }
+    }
+}
