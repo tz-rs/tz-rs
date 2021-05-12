@@ -27,8 +27,11 @@ impl fmt::Display for Block {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum HistoryMode {
+    #[serde(rename(serialize = "full", deserialize = "full"))]
     Full,
+    #[serde(rename(serialize = "archive", deserialize = "archive"))]
     Archive,
+    #[serde(rename(serialize = "rolling", deserialize = "rolling"))]
     Rolling,
 }
 
