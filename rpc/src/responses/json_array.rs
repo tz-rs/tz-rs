@@ -1,15 +1,15 @@
 use super::ParseError;
-use serde::de;
+use serde::{de, Deserialize, Serialize};
 use serde_json::{self, json, Value};
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct JsonArray<T> {
     nested_vec: Vec<Vec<T>>,
 }
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
-    pub fn from_str(str_to_parse: &str) -> Result<Self, ParseError> {
+    pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
         let mut parse_response = serde_json::from_str::<Value>(str_to_parse)?;
         let parsed_json_array = parse_response
             .as_array_mut()
