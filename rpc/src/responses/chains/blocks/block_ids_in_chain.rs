@@ -1,9 +1,19 @@
 use crate::errors::ParseError;
-use crate::responses::{Response, json_array};
+use crate::responses::{json_array, Response};
 use crate::types::Unistring;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::fmt;
 
+#[derive(Serialize, Deserialize)]
 pub struct BlocksInChainResponse {
     pub block_ids: json_array::JsonArray<Unistring>,
+}
+
+impl fmt::Display for BlocksInChainResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", json!(self).to_string())
+    }
 }
 
 impl Response for BlocksInChainResponse {
@@ -12,7 +22,7 @@ impl Response for BlocksInChainResponse {
     /// `[[{ "invalid_utf8_string": [ integer ∈ [0, 255] ... ] }], [...]]` into a
     /// [`BlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let block_ids = json_array::JsonArray::from_str(response)?;
+        let block_ids = json_array::JsonArray::from_response_str(response)?;
 
         Ok(Self { block_ids })
     }
@@ -49,7 +59,7 @@ mod test {
 
         let mut blocks = blocks_response.unwrap().block_ids.into_vec();
         let parsed_block = blocks.pop().unwrap();
-        assert!(parsed_block.get_string() == "");
+        assert!(parsed_block.to_string() == "");
     }
 
     #[test]
@@ -66,13 +76,13 @@ mod test {
         let parsed_block = blocks.pop();
         assert!(parsed_block.is_some());
 
-        let parsed_block_id = parsed_block.unwrap().get_string();
+        let parsed_block_id = parsed_block.unwrap().to_string();
         assert_eq!(parsed_block_id, mock_block_id);
     }
 
     #[test]
     fn get_blocks_in_chain_from_invalid_utf8_response_single_ok() {
-        let mock_nested_object = r#"{ "invalid_utf8_string": [1, 2, 3, 4] }"#;
+        let mock_nested_object = r#"{"invalid_utf8_string":[1,2,3,4]}"#;
         let mock_response = format!(r#"[[{}]]"#, mock_nested_object);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
@@ -84,7 +94,7 @@ mod test {
         let parsed_block = blocks.pop();
         assert!(parsed_block.is_some());
 
-        let parsed_block_id = parsed_block.unwrap().get_string();
+        let parsed_block_id = parsed_block.unwrap().to_string();
         assert_eq!(parsed_block_id, mock_nested_object);
     }
 
@@ -108,8 +118,8 @@ mod test {
 
         for mock_block_id in mock_block_ids.iter().rev() {
             let parsed_block = blocks.pop().unwrap();
-            let parsed_block_id = parsed_block.get_string();
-            assert_eq!(parsed_block_id, mock_block_id.to_string())
+            let parsed_block_id = parsed_block.to_string();
+            assert_eq!(parsed_block_id, mock_block_id.to_string());
         }
     }
 }
