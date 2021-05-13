@@ -61,9 +61,7 @@ async fn get_blocks_optional_length_ok() {
     assert!(client_response.is_ok());
 
     let block_response = client_response.unwrap();
-    let blocks = block_response.block_ids.into_vec();
-    println!("{:?}", blocks);
-    panic!();
+    let mut blocks = block_response.block_ids.into_vec();
 
     let last_block_batch = blocks.pop();
     assert!(last_block_batch.is_some());
@@ -80,6 +78,6 @@ fn generate_get_blocks_command_with_explicit_params(
     GetBlocksInChain::with_explicit_params(chain_id, length, head_hash, min_date)
 }
 
-fn get_test_naive_datetime_at_epoc() -> NaiveDateTime {
+fn _get_test_naive_datetime_at_epoc() -> NaiveDateTime {
     NaiveDateTime::from_timestamp(0, 0)
 }

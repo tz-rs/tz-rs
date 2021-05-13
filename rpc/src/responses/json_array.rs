@@ -1,24 +1,17 @@
 use super::ParseError;
 use serde::{de, Deserialize, Serialize};
-use serde_json::{self, json, Value};
+use serde_json::{self, Value};
+use std::array::IntoIter;
 use std::fmt;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct JsonArray<T> {
     items: Vec<T>,
 }
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
-        let parsed_array = try_parse_array_from_json_str(str_to_parse)?;
-
-        let mut items = Vec::new();
-
-        for item in parsed_array {
-            let converted_item: T = serde_json::from_value(item);
-            items.push(converted_item);
-        }
-
+        let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
         Ok(Self { items })
     }
 
@@ -27,14 +20,23 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
     }
 }
 
-fn try_parse_array_from_json_str<T: de::DeserializeOwned>(
+fn try_parse_array_into_item_from_response_str<T: de::DeserializeOwned>(
     json_str: &str,
 ) -> Result<Vec<T>, ParseError> {
-    let mut parse_response = serde_json::from_str::<Value>(json_str)?;
-    parse_response
+    let mut parse_response = serde_json::from_str::<Value>(json_str)?.take();
+    let json_array = parse_response
         .as_array_mut()
-        .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))
-        .take()
+        .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))?;
+
+    let mut item_vec = Vec::new();
+    for json_item in json_array {
+        let converted_item: [T; 1] = serde_json::from_value(json_item.take())?;
+        for item in IntoIter::new(converted_item) {
+            item_vec.push(item);
+        }
+    }
+
+    Ok(item_vec)
 }
 
 impl<T: fmt::Display> fmt::Display for JsonArray<T> {
@@ -49,23 +51,6 @@ impl<T: fmt::Display> fmt::Display for JsonArray<T> {
     }
 }
 
-fn unwrap_item_in_nested_json_array<T: de::DeserializeOwned>(
-    mut nested_item: Value,
-) -> Result<T, ParseError> {
-    let nested_array = nested_item
-        .as_array_mut()
-        .ok_or_else(|| generate_none_error("invalid initial json array"))?;
-
-    for item in nested_array {
-        let converted_item: T = serde_json::from_value(item);
-    }
-
-    // match nested_array.last() {
-    // Some(_) => Ok(nested_array.pop().unwrap()),
-    // None => Ok(json!("")),
-    // }
-}
-
 fn generate_none_error(detail: &str) -> ParseError {
     ParseError::ResponseParsingError(detail.to_string())
 }
@@ -75,11 +60,11 @@ mod test {
     use super::*;
 
     #[test]
-    fn one_dimensional_json_array_parse_ok() {
+    fn one_dimensional_json_array_from_str_parse_ok() {
         let mock_values = ["foo", "bar"];
         let mock_str_to_parse = format!(r#"[["{}"], ["{}"]]"#, mock_values[0], mock_values[1]);
 
-        let parse_response = JsonArray::<String>::from_str(&mock_str_to_parse);
+        let parse_response = JsonArray::<String>::from_response_str(&mock_str_to_parse);
         assert!(parse_response.is_ok());
 
         let json_array = parse_response.unwrap();
@@ -93,7 +78,7 @@ mod test {
     fn no_json_array_values_parse_ok() {
         let mock_str_to_parse = "[]";
 
-        let parse_response = JsonArray::<String>::from_str(&mock_str_to_parse);
+        let parse_response = JsonArray::<String>::from_response_str(&mock_str_to_parse);
         assert!(parse_response.is_ok());
 
         let json_array = parse_response.unwrap().into_vec();
@@ -104,7 +89,7 @@ mod test {
     fn empty_json_str_fail() {
         let mock_str_to_parse = "";
 
-        let parse_response = JsonArray::<String>::from_str(&mock_str_to_parse);
+        let parse_response = JsonArray::<String>::from_response_str(&mock_str_to_parse);
         assert!(parse_response.is_err());
     }
 }
