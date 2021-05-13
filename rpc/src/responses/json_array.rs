@@ -5,37 +5,42 @@ use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JsonArray<T> {
-    nested_vec: Vec<Vec<T>>,
+    items: Vec<T>,
 }
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
-        let mut parse_response = serde_json::from_str::<Value>(str_to_parse)?;
-        let parsed_json_array = parse_response
-            .as_array_mut()
-            .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))?;
+        let parsed_array = try_parse_array_from_json_str(str_to_parse)?;
 
-        let mut flattened_vec = Vec::new();
-        for nested_entry in parsed_json_array {
-            let parsed_item_value = match nested_entry.is_array() {
-                true => unwrap_item_in_nested_json_array(nested_entry.take())?,
-                false => nested_entry.take(),
-            };
-            flattened_vec.push(converted_item);
+        let mut items = Vec::new();
+
+        for item in parsed_array {
+            let converted_item: T = serde_json::from_value(item);
+            items.push(converted_item);
         }
 
-        Ok(Self { flattened_vec })
+        Ok(Self { items })
     }
 
     pub fn into_vec(self) -> Vec<T> {
-        self.flattened_vec
+        self.items
     }
+}
+
+fn try_parse_array_from_json_str<T: de::DeserializeOwned>(
+    json_str: &str,
+) -> Result<Vec<T>, ParseError> {
+    let mut parse_response = serde_json::from_str::<Value>(json_str)?;
+    parse_response
+        .as_array_mut()
+        .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))
+        .take()
 }
 
 impl<T: fmt::Display> fmt::Display for JsonArray<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut display_string = String::from("[");
-        for value in &self.flattened_vec {
+        for value in &self.items {
             display_string.push_str(&format!("{}, ", value.to_string()));
         }
         display_string.truncate(display_string.len() - 2);
