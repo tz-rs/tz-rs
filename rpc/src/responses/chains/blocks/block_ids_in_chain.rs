@@ -1,5 +1,5 @@
 use crate::errors::ParseError;
-use crate::responses::{json_array, Response};
+use crate::responses::{json_array::JsonArray, Response};
 use crate::types::Unistring;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -7,7 +7,7 @@ use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlocksInChainResponse {
-    pub block_ids: json_array::JsonArray<Unistring>,
+    pub block_ids: JsonArray<JsonArray<Unistring>>,
 }
 
 impl fmt::Display for BlocksInChainResponse {
@@ -22,7 +22,7 @@ impl Response for BlocksInChainResponse {
     /// `[[{ "invalid_utf8_string": [ integer ∈ [0, 255] ... ] }], [...]]` into a
     /// [`BlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let block_ids = json_array::JsonArray::from_response_str(response)?;
+        let block_ids = JsonArray::from_nested_response_str(response)?;
 
         Ok(Self { block_ids })
     }
@@ -68,6 +68,8 @@ mod test {
         let mock_response = format!(r#"[["{}"]]"#, mock_block_id);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
+        println!("{:?}", blocks_response);
+        panic!();
         assert!(blocks_response.is_ok());
 
         let mut blocks = blocks_response.unwrap().block_ids.into_vec();

@@ -4,9 +4,16 @@ use serde_json::{self, Value};
 use std::array::IntoIter;
 use std::fmt;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct JsonArray<T> {
     items: Vec<T>,
+}
+
+impl<T: de::DeserializeOwned + fmt::Debug> JsonArray<JsonArray<T>> {
+    pub fn from_nested_response_str(nested_json_str: &str) -> Result<Self, ParseError> {
+        let inner = Self::from_response_str(nested_json_str)?.into_vec();
+        Ok(Self { items: inner })
+    }
 }
 
 impl<T: de::DeserializeOwned> JsonArray<T> {
