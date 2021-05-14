@@ -12,13 +12,17 @@ pub struct JsonArray<T> {
 impl<T: de::DeserializeOwned + fmt::Debug> JsonArray<JsonArray<T>> {
     pub fn from_nested_response_str(nested_json_str: &str) -> Result<Self, ParseError> {
         let inner = Self::from_response_str(nested_json_str)?.into_vec();
+        println!("{:?}", &inner);
         Ok(Self { items: inner })
     }
 }
 
-impl<T: de::DeserializeOwned> JsonArray<T> {
+impl<T: de::DeserializeOwned + fmt::Debug> JsonArray<T> {
     pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
-        let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
+        let x = try_parse_array_into_item_from_response_str(str_to_parse);
+        println!("{:?}", &x);
+        // let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
+        let items = x?;
         Ok(Self { items })
     }
 
