@@ -1,4 +1,5 @@
 use super::ParseError;
+use crate::types::Unistring;
 use serde::{de, Deserialize, Serialize};
 use serde_json::{self, Value};
 use std::array::IntoIter;
@@ -9,18 +10,9 @@ pub struct JsonArray<T> {
     items: Vec<T>,
 }
 
-impl<T: de::DeserializeOwned + fmt::Debug> JsonArray<JsonArray<T>> {
-    pub fn from_nested_response_str(nested_json_str: &str) -> Result<Self, ParseError> {
-        let inner = Self::from_response_str(nested_json_str)?.into_vec();
-        println!("{:?}", &inner);
-        Ok(Self { items: inner })
-    }
-}
-
-impl<T: de::DeserializeOwned + fmt::Debug> JsonArray<T> {
+impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
         let x = try_parse_array_into_item_from_response_str(str_to_parse);
-        println!("{:?}", &x);
         // let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
         let items = x?;
         Ok(Self { items })
@@ -31,16 +23,54 @@ impl<T: de::DeserializeOwned + fmt::Debug> JsonArray<T> {
     }
 }
 
+impl JsonArray<JsonArray<String>> {
+    fn _from_nested_response_str(
+        nested_json_str: &str,
+    ) -> Result<JsonArray<JsonArray<String>>, ParseError> {
+        let outer_array = try_json_str_into_json_array(nested_json_str)?;
+        let mut items = Vec::new();
+        for item in outer_array {
+            let json_item = JsonArray::from_response_str(nested_json_str)?;
+            items.push(json_item);
+        }
+        Ok(JsonArray { items })
+    }
+}
+
+impl JsonArray<JsonArray<Unistring>> {
+    pub fn from_nested_response_str(
+        nested_json_str: &str,
+    ) -> Result<JsonArray<JsonArray<Unistring>>, ParseError> {
+        let outer_array = try_json_str_into_json_array(nested_json_str)?;
+        let mut items = Vec::new();
+        for item in outer_array {
+            println!("{:?}", item);
+            panic!();
+            // let json_item = JsonArray::from_response_str(item)?;
+            // items.push(json_item);
+        }
+        Ok(JsonArray { items })
+    }
+}
+
+pub fn from_nested_response_str<T: de::DeserializeOwned>(
+    nested_json_str: &str,
+) -> Result<JsonArray<JsonArray<T>>, ParseError> {
+    let outer_array = try_json_str_into_json_array(nested_json_str)?;
+    let mut items = Vec::new();
+    for item in outer_array {
+        let json_item = JsonArray::from_response_str(nested_json_str)?;
+        items.push(json_item);
+    }
+    Ok(JsonArray { items })
+}
+
 fn try_parse_array_into_item_from_response_str<T: de::DeserializeOwned>(
     json_str: &str,
 ) -> Result<Vec<T>, ParseError> {
-    let mut parse_response = serde_json::from_str::<Value>(json_str)?.take();
-    let json_array = parse_response
-        .as_array_mut()
-        .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))?;
-
+    let json_array = try_json_str_into_json_array(json_str)?;
     let mut item_vec = Vec::new();
-    for json_item in json_array {
+    for mut json_item in json_array {
         let converted_item: [T; 1] = serde_json::from_value(json_item.take())?;
         for item in IntoIter::new(converted_item) {
             item_vec.push(item);
@@ -48,6 +78,16 @@ fn try_parse_array_into_item_from_response_str<T: de::DeserializeOwned>(
     }
 
     Ok(item_vec)
+}
+
+fn try_json_str_into_json_array(json_str: &str) -> Result<Vec<Value>, ParseError> {
+    let mut parse_response = serde_json::from_str::<Value>(json_str)?.take();
+    Ok(parse_response
+        .as_array_mut()
+        .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))?
+        .iter_mut()
+        .map(|x| x.take())
+        .collect())
 }
 
 impl<T: fmt::Display> fmt::Display for JsonArray<T> {
@@ -69,6 +109,20 @@ fn generate_none_error(detail: &str) -> ParseError {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn two_dimensional_json_array_from_nested_str_parse_ok() {
+        let mock_values = [["foo", "bar"], ["foo_", "bar_"]];
+        let mock_str_to_parse = format!("{:?}", &mock_values);
+
+        let parse_response =
+            JsonArray::<JsonArray<Unistring>>::from_nested_response_str(&mock_str_to_parse);
+        assert!(parse_response.is_ok());
+
+        let json_array = parse_response.unwrap();
+        let string_to_compare = mock_str_to_parse;
+        assert_eq!(json_array.to_string(), string_to_compare);
+    }
 
     #[test]
     fn one_dimensional_json_array_from_str_parse_ok() {
