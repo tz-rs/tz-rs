@@ -21,12 +21,11 @@ impl<T> iter::IntoIterator for JsonArray<T> {
 
 impl<T: fmt::Display> fmt::Display for JsonArray<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut display_string = String::from("[");
+        let mut display_string = String::new();
         for value in &self.items {
             display_string.push_str(&format!("{}, ", value.to_string()));
         }
         display_string.truncate(display_string.len() - 2);
-        display_string.push_str("]");
         write!(f, "{}", display_string)
     }
 }
