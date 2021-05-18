@@ -1,5 +1,4 @@
 use super::ParseError;
-use crate::types::Unistring;
 use serde::{de, Deserialize, Serialize};
 use serde_json::{self, Value};
 use std::array;
@@ -11,20 +10,6 @@ pub struct JsonArray<T> {
     items: Vec<T>,
 }
 
-impl JsonArray<JsonArray<String>> {
-    fn _from_nested_response_str(
-        nested_json_str: &str,
-    ) -> Result<JsonArray<JsonArray<String>>, ParseError> {
-        let outer_array = try_json_str_into_json_array(nested_json_str)?;
-        let mut items = Vec::new();
-        for _item in outer_array {
-            let json_item = JsonArray::from_response_str(nested_json_str)?;
-            items.push(json_item);
-        }
-        Ok(JsonArray { items })
-    }
-}
-
 impl<T> iter::IntoIterator for JsonArray<T> {
     type Item = T;
     type IntoIter = std::vec::IntoIter<Self::Item>;
@@ -34,11 +19,21 @@ impl<T> iter::IntoIterator for JsonArray<T> {
     }
 }
 
+impl<T: fmt::Display> fmt::Display for JsonArray<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut display_string = String::from("[");
+        for value in &self.items {
+            display_string.push_str(&format!("{}, ", value.to_string()));
+        }
+        display_string.truncate(display_string.len() - 2);
+        display_string.push_str("]");
+        write!(f, "{}", display_string)
+    }
+}
+
 impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
-        let x = try_parse_array_into_item_from_response_str(str_to_parse);
-        // let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
-        let items = x?;
+        let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
         Ok(Self { items })
     }
 
@@ -50,19 +45,20 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
         let array = json_value
             .as_array_mut()
             .ok_or_else(|| generate_none_error("cannot parse initial json string as array"))?;
+
         let mut items = Vec::new();
         for item in array {
-            let converted_item: T = serde_json::from_value(item.take())?;
+            let converted_item = serde_json::from_value(item.take())?;
             items.push(converted_item);
         }
         Ok(Self { items })
     }
 }
 
-impl JsonArray<JsonArray<Unistring>> {
+impl<T: de::DeserializeOwned> JsonArray<JsonArray<T>> {
     pub fn from_nested_response_str(
         nested_json_str: &str,
-    ) -> Result<JsonArray<JsonArray<Unistring>>, ParseError> {
+    ) -> Result<JsonArray<JsonArray<T>>, ParseError> {
         let outer_array = try_json_str_into_json_array(nested_json_str)?;
 
         let mut items = Vec::new();
@@ -111,18 +107,6 @@ fn try_json_str_into_json_array(json_str: &str) -> Result<Vec<Value>, ParseError
         .collect())
 }
 
-impl<T: fmt::Display> fmt::Display for JsonArray<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut display_string = String::from("[");
-        for value in &self.items {
-            display_string.push_str(&format!("{}, ", value.to_string()));
-        }
-        display_string.truncate(display_string.len() - 2);
-        display_string.push_str("]");
-        write!(f, "{}", display_string)
-    }
-}
-
 fn generate_none_error(detail: &str) -> ParseError {
     ParseError::ResponseParsingError(detail.to_string())
 }
@@ -130,9 +114,25 @@ fn generate_none_error(detail: &str) -> ParseError {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::types::Unistring;
 
     #[test]
-    fn two_dimensional_json_array_from_nested_str_parse_ok() {
+    fn two_dimensional_string_json_array_from_nested_str_parse_ok() {
+        let mock_values = [["foo", "bar"], ["foo_", "bar_"]];
+        let mock_str_to_parse = format!("{:?}", &mock_values);
+
+        type NestedType = JsonArray<String>;
+        let parse_response = JsonArray::<NestedType>::from_nested_response_str(&mock_str_to_parse);
+        assert!(parse_response.is_ok());
+
+        let response = parse_response.unwrap();
+        let tuple_vec = get_tuple_vec_from_response_and_mock_values(response, &mock_values);
+
+        assert!(check_tuples_are_eq(tuple_vec));
+    }
+
+    #[test]
+    fn two_dimensional_unistring_json_array_from_nested_str_parse_ok() {
         let mock_values = [["foo", "bar"], ["foo_", "bar_"]];
         let mock_str_to_parse = format!("{:?}", &mock_values);
 
@@ -141,11 +141,9 @@ mod test {
         assert!(parse_response.is_ok());
 
         let response = parse_response.unwrap();
-        let tuple_vec = get_zipped_vec_from_response_and_mock_values(response, &mock_values);
+        let tuple_vec = get_tuple_vec_from_response_and_mock_values(response, &mock_values);
 
-        for tuple in tuple_vec.iter() {
-            assert_eq!(tuple.0, tuple.1);
-        }
+        assert!(check_tuples_are_eq(tuple_vec));
     }
 
     #[test]
@@ -182,7 +180,7 @@ mod test {
         assert!(parse_response.is_err());
     }
 
-    fn get_zipped_vec_from_response_and_mock_values<'a, T, I: 'a>(
+    fn get_tuple_vec_from_response_and_mock_values<'a, T, I: 'a>(
         response: JsonArray<JsonArray<T>>,
         mock_values: I,
     ) -> Vec<(T, <<I as IntoIterator>::Item as IntoIterator>::Item)>
@@ -203,5 +201,17 @@ mod test {
             arr.push(tuple);
         }
         arr
+    }
+
+    fn check_tuples_are_eq<L, R>(tuple_vec: Vec<(L, &R)>) -> bool
+    where
+        L: PartialEq<R>,
+    {
+        for tuple in tuple_vec.iter() {
+            if tuple.0 != *tuple.1 {
+                return false;
+            }
+        }
+        true
     }
 }

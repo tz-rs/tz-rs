@@ -27,15 +27,6 @@ impl PartialEq<&str> for Unistring {
     }
 }
 
-impl PartialEq<&&str> for Unistring {
-    fn eq(&self, other: &&&str) -> bool {
-        match self {
-            Self::ValidUtf8(utf8_string) => utf8_string == *other,
-            _ => false,
-        }
-    }
-}
-
 impl PartialEq<str> for Unistring {
     fn eq(&self, other: &str) -> bool {
         match self {
