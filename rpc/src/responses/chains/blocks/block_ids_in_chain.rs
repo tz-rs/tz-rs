@@ -68,7 +68,6 @@ mod test {
         let mock_response = format!(r#"[["{}"]]"#, mock_block_id);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response);
-        println!("{:?}", blocks_response);
 
         let mut blocks = blocks_response.unwrap().block_ids.into_vec();
         assert!(blocks.len() == 1);

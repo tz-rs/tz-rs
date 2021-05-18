@@ -67,7 +67,6 @@ impl JsonArray<JsonArray<Unistring>> {
 
         let mut items = Vec::new();
         for mut item in outer_array {
-            println!("{:?}", item);
             let json_item = JsonArray::from_json_array(&mut item)?;
             items.push(json_item);
         }
