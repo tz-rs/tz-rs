@@ -66,7 +66,7 @@ async fn get_blocks_optional_length_ok() {
     let last_block_batch = blocks.pop();
     assert!(last_block_batch.is_some());
 
-    // assert_eq!(last_block_batch.unwrap().len(), length as usize);
+    assert_eq!(last_block_batch.unwrap().len(), length as usize);
 }
 
 fn generate_get_blocks_command_with_explicit_params(
