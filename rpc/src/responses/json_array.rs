@@ -1,7 +1,6 @@
 use super::ParseError;
 use serde::{de, Deserialize, Serialize};
 use serde_json::{self, Value};
-use std::array;
 use std::fmt;
 use std::iter;
 
@@ -34,13 +33,17 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
     }
 
     pub fn from_json_object(json_value: &mut Value) -> Result<Self, ParseError> {
-        // let object_map = json_value
-        // .as_object_mut()
-        // .ok_or_else(|| generate_none_error("cannot parse initial json string as object"))?;
-
         let converted_object = serde_json::from_value(json_value.take())?;
         let items = vec![converted_object];
         Ok(Self { items })
+    }
+
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
     }
 }
 
@@ -94,18 +97,11 @@ fn try_parse_array_into_item_from_response_str<T: de::DeserializeOwned>(
     json_str: &str,
 ) -> Result<Vec<T>, ParseError> {
     let json_array = try_json_str_into_json_array(json_str)?;
-    println!("ARR: {:?}", &json_array);
     let mut item_vec = Vec::new();
+
     for mut json_item in json_array {
-        // let converted_item: [T; 1] = serde_json::from_value(json_item.take())?;
-        let x = serde_json::from_value::<[T; 1]>(json_item.take());
-        if let Err(e) = &x {
-            println!("{:?}", &e);
-        }
-        let converted_item = x?;
-        for item in array::IntoIter::new(converted_item) {
-            item_vec.push(item);
-        }
+        let converted_item = serde_json::from_value(json_item.take())?;
+        item_vec.push(converted_item);
     }
 
     Ok(item_vec)
@@ -130,25 +126,58 @@ mod test {
     use super::*;
     use crate::types::Unistring;
 
-    // #[test]
-    // fn parse_json_str_into_object_ok() {
-    // struct MockObject {
-    // foo: String,
-    // bar: u32,
-    // boolean: bool,
-    // }
+    #[test]
+    fn parse_json_str_into_object_ok() {
+        #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+        struct MockObject {
+            foo: String,
+            bar: u32,
+            boolean: bool,
+        }
 
-    // let mock_value = MockObject{foo: "foo".to_string(), bar: 10, boolean: false};
-    // let mock_str_to_parse = format!("");
+        let mock_object_1 = MockObject {
+            foo: "foo".to_string(),
+            bar: 10,
+            boolean: false,
+        };
 
-    // let parse_response = JsonArray::<MockObject>::from_response_str(&mock_str_to_parse);
-    // assert!(parse_response.is_ok());
+        let mock_object_2 = MockObject {
+            foo: "foo_".to_string(),
+            bar: 100,
+            boolean: true,
+        };
 
-    // let json_array = parse_response.unwrap();
+        fn mock_object_to_str(obj: &MockObject) -> String {
+            let data = format!(
+                r#""foo": "{}", "bar": {}, "boolean": {}"#,
+                obj.foo, obj.bar, obj.boolean
+            );
+            ["{", &data, "}"].join("")
+        }
 
-    // assert_eq!(
-    // assert_eq!(json_array.into_vec().len(), mock_values.len());
-    // }
+        let mock_str_to_parse = format!(
+            "[{}, {}]",
+            mock_object_to_str(&mock_object_1),
+            mock_object_to_str(&mock_object_2),
+        );
+
+        let parse_response = JsonArray::<MockObject>::from_response_str(&mock_str_to_parse);
+        assert!(parse_response.is_ok());
+
+        let json_array = parse_response.unwrap();
+
+        let mock_value_arr = [mock_object_1, mock_object_2];
+        assert_eq!(json_array.len(), mock_value_arr.len());
+
+        let mock_value_and_parsed_value_tuple_iter =
+            mock_value_arr.iter().zip(json_array.into_iter());
+
+        for tuple in mock_value_and_parsed_value_tuple_iter {
+            let mock_val = tuple.0;
+            let parsed_val = &tuple.1;
+            assert_eq!(mock_val, parsed_val);
+        }
+    }
 
     #[test]
     fn two_dimensional_string_json_array_from_nested_str_parse_ok() {
@@ -181,9 +210,9 @@ mod test {
     }
 
     #[test]
-    fn one_dimensional_json_array_from_str_parse_ok() {
+    fn one_dimensional_json_array_of_strings_from_str_parse_ok() {
         let mock_values = ["foo", "bar"];
-        let mock_str_to_parse = format!(r#"[["{}"], ["{}"]]"#, mock_values[0], mock_values[1]);
+        let mock_str_to_parse = format!("{:?}", &mock_values);
 
         let parse_response = JsonArray::<String>::from_response_str(&mock_str_to_parse);
         assert!(parse_response.is_ok());

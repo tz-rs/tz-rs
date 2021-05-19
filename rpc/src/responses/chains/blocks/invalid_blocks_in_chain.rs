@@ -47,10 +47,10 @@ impl Response for InvalidBlocksInChainResponse {
     ///      "errors": $error }, ...]"` into a
     /// [`InvalidBlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let invalid_blocks = json_array::JsonArray::from_nested_response_str(response)?
-            .into_vec()
-            .pop()
-            .unwrap();
+        let invalid_blocks = json_array::JsonArray::from_response_str(response)?;
+        // .into_vec()
+        // .pop()
+        // .unwrap();
 
         Ok(Self { invalid_blocks })
     }
@@ -66,15 +66,18 @@ mod test {
 
         let parse_response = InvalidBlocksInChainResponse::from_response_str(&mock_response);
 
-        println!("RESP RESULT: {:?}", &parse_response);
         assert!(parse_response.is_ok());
 
         let mut invalid_blocks = parse_response.unwrap().invalid_blocks.into_vec();
         assert!(invalid_blocks.len() == 1);
 
         let invalid_block = invalid_blocks.pop().unwrap();
-        let invalid_block_array_str = format!("[{}]", invalid_block);
-        assert_eq!(invalid_block_array_str, mock_response);
+        let invalid_block_array_string = {
+            let block_array_string = format!("[{}]", invalid_block);
+            trim_and_remove_whitespace_from_string(block_array_string)
+        };
+
+        assert_eq!(invalid_block_array_string, mock_response);
     }
 
     #[test]
@@ -159,7 +162,8 @@ mod test {
             mock_extra_value
         );
 
-        mock_error_response.replace('\n', "").replace('\t', "")
+        let trimmed_string = trim_and_remove_whitespace_from_string(mock_error_response);
+        trimmed_string
     }
 
     fn format_response_data_as_string(
@@ -176,6 +180,14 @@ mod test {
             mock_block, mock_level, mock_error_response
         );
 
-        mock_response.replace('\n', "").replace('\t', "")
+        let trimmed_string = trim_and_remove_whitespace_from_string(mock_response);
+        trimmed_string
+    }
+
+    fn trim_and_remove_whitespace_from_string(pre_format_string: String) -> String {
+        pre_format_string
+            .replacen(' ', "", usize::MAX)
+            .replace('\n', "")
+            .replace('\t', "")
     }
 }
