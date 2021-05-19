@@ -10,26 +10,6 @@ pub struct JsonArray<T> {
     items: Vec<T>,
 }
 
-impl<T> iter::IntoIterator for JsonArray<T> {
-    type Item = T;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.items.into_iter()
-    }
-}
-
-impl<T: fmt::Display> fmt::Display for JsonArray<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut display_string = String::new();
-        for value in &self.items {
-            display_string.push_str(&format!("{}, ", value.to_string()));
-        }
-        display_string.truncate(display_string.len() - 2);
-        write!(f, "{}", display_string)
-    }
-}
-
 impl<T: de::DeserializeOwned> JsonArray<T> {
     pub fn from_response_str(str_to_parse: &str) -> Result<Self, ParseError> {
         let items = try_parse_array_into_item_from_response_str(str_to_parse)?;
@@ -52,6 +32,16 @@ impl<T: de::DeserializeOwned> JsonArray<T> {
         }
         Ok(Self { items })
     }
+
+    pub fn from_json_object(json_value: &mut Value) -> Result<Self, ParseError> {
+        // let object_map = json_value
+        // .as_object_mut()
+        // .ok_or_else(|| generate_none_error("cannot parse initial json string as object"))?;
+
+        let converted_object = serde_json::from_value(json_value.take())?;
+        let items = vec![converted_object];
+        Ok(Self { items })
+    }
 }
 
 impl<T: de::DeserializeOwned> JsonArray<JsonArray<T>> {
@@ -62,32 +52,57 @@ impl<T: de::DeserializeOwned> JsonArray<JsonArray<T>> {
 
         let mut items = Vec::new();
         for mut item in outer_array {
-            let json_item = JsonArray::from_json_array(&mut item)?;
+            let json_item = match &item {
+                Value::Array(_) => JsonArray::from_json_array(&mut item),
+                Value::Object(_) => JsonArray::from_json_object(&mut item),
+                _ => {
+                    let detail = "initial json value is neither an object or an array".to_string();
+                    Err(ParseError::ResponseParsingError(detail))
+                }
+            }?;
             items.push(json_item);
         }
         Ok(JsonArray { items })
     }
 }
 
-pub fn from_nested_response_str<T: de::DeserializeOwned>(
-    nested_json_str: &str,
-) -> Result<JsonArray<JsonArray<T>>, ParseError> {
-    let outer_array = try_json_str_into_json_array(nested_json_str)?;
-    let mut items = Vec::new();
-    for _item in outer_array {
-        let json_item = JsonArray::from_response_str(nested_json_str)?;
-        items.push(json_item);
+impl<T> iter::IntoIterator for JsonArray<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.items.into_iter()
     }
-    Ok(JsonArray { items })
+}
+
+impl<T: fmt::Display> fmt::Display for JsonArray<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.items.is_empty() {
+            write!(f, "")
+        } else {
+            let mut display_string = String::new();
+            for value in &self.items {
+                display_string.push_str(&format!("{}, ", value));
+            }
+            display_string.truncate(display_string.len() - 2);
+            write!(f, "{}", display_string)
+        }
+    }
 }
 
 fn try_parse_array_into_item_from_response_str<T: de::DeserializeOwned>(
     json_str: &str,
 ) -> Result<Vec<T>, ParseError> {
     let json_array = try_json_str_into_json_array(json_str)?;
+    println!("ARR: {:?}", &json_array);
     let mut item_vec = Vec::new();
     for mut json_item in json_array {
-        let converted_item: [T; 1] = serde_json::from_value(json_item.take())?;
+        // let converted_item: [T; 1] = serde_json::from_value(json_item.take())?;
+        let x = serde_json::from_value::<[T; 1]>(json_item.take());
+        if let Err(e) = &x {
+            println!("{:?}", &e);
+        }
+        let converted_item = x?;
         for item in array::IntoIter::new(converted_item) {
             item_vec.push(item);
         }
@@ -114,6 +129,26 @@ fn generate_none_error(detail: &str) -> ParseError {
 mod test {
     use super::*;
     use crate::types::Unistring;
+
+    // #[test]
+    // fn parse_json_str_into_object_ok() {
+    // struct MockObject {
+    // foo: String,
+    // bar: u32,
+    // boolean: bool,
+    // }
+
+    // let mock_value = MockObject{foo: "foo".to_string(), bar: 10, boolean: false};
+    // let mock_str_to_parse = format!("");
+
+    // let parse_response = JsonArray::<MockObject>::from_response_str(&mock_str_to_parse);
+    // assert!(parse_response.is_ok());
+
+    // let json_array = parse_response.unwrap();
+
+    // assert_eq!(
+    // assert_eq!(json_array.into_vec().len(), mock_values.len());
+    // }
 
     #[test]
     fn two_dimensional_string_json_array_from_nested_str_parse_ok() {
@@ -154,7 +189,7 @@ mod test {
         assert!(parse_response.is_ok());
 
         let json_array = parse_response.unwrap();
-        let string_to_compare = format!("[{}, {}]", mock_values[0], mock_values[1]);
+        let string_to_compare = format!("{}, {}", mock_values[0], mock_values[1]);
         assert_eq!(json_array.to_string(), string_to_compare);
 
         assert_eq!(json_array.into_vec().len(), mock_values.len());

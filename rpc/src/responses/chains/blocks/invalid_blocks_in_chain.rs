@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InvalidBlockError {
     pub kind: String,
     pub id: String,
@@ -22,7 +22,7 @@ impl fmt::Display for InvalidBlockError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InvalidBlock {
     pub block: Unistring,
     pub level: i32,
@@ -35,6 +35,7 @@ impl fmt::Display for InvalidBlock {
     }
 }
 
+#[derive(Debug)]
 pub struct InvalidBlocksInChainResponse {
     pub invalid_blocks: json_array::JsonArray<InvalidBlock>,
 }
@@ -46,7 +47,10 @@ impl Response for InvalidBlocksInChainResponse {
     ///      "errors": $error }, ...]"` into a
     /// [`InvalidBlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
-        let invalid_blocks = json_array::JsonArray::from_response_str(response)?;
+        let invalid_blocks = json_array::JsonArray::from_nested_response_str(response)?
+            .into_vec()
+            .pop()
+            .unwrap();
 
         Ok(Self { invalid_blocks })
     }
@@ -56,44 +60,21 @@ impl Response for InvalidBlocksInChainResponse {
 mod test {
     use super::*;
 
-    fn get_mock_error_response(
-        mock_kind: &str,
-        mock_id: &str,
-        mock_invalid_block_hash: &str,
-        mock_error: &str,
-        mock_extra_key: &str,
-        mock_extra_value: &str,
-    ) -> String {
-        let mock_error_response = format!(
-            r#"{{
-				"kind":"{}",
-				"id":"{}",
-				"invalid_block":"{}",
-				"error":"{}",
-				"{}":"{}"
-			}}"#,
-            mock_kind,
-            mock_id,
-            mock_invalid_block_hash,
-            mock_error,
-            mock_extra_key,
-            mock_extra_value
-        );
+    #[test]
+    fn get_invalid_blocks_in_chain_from_response_ok() {
+        let mock_response = generate_valid_mock_response_string();
 
-        mock_error_response.replace('\n', "").replace('\t', "")
-    }
+        let parse_response = InvalidBlocksInChainResponse::from_response_str(&mock_response);
 
-    fn get_mock_response(mock_block: &str, mock_level: i32, mock_error_response: &str) -> String {
-        let mock_response = format!(
-            r#"[{{
-				"block":"{}",
-				"level":{},
-				"errors":{}
-			}}]"#,
-            mock_block, mock_level, mock_error_response
-        );
+        println!("RESP RESULT: {:?}", &parse_response);
+        assert!(parse_response.is_ok());
 
-        mock_response.replace('\n', "").replace('\t', "")
+        let mut invalid_blocks = parse_response.unwrap().invalid_blocks.into_vec();
+        assert!(invalid_blocks.len() == 1);
+
+        let invalid_block = invalid_blocks.pop().unwrap();
+        let invalid_block_array_str = format!("[{}]", invalid_block);
+        assert_eq!(invalid_block_array_str, mock_response);
     }
 
     #[test]
@@ -106,10 +87,35 @@ mod test {
     }
 
     #[test]
-    fn get_invalid_blocks_in_chain_from_response_ok() {
+    fn get_invalid_blocks_in_chain_from_malformed_response_fails() {
+        let mock_block = "blockId2";
+        let mock_level = 2;
+
+        // Mock response without errors field, which is required for all type of errors
+        let mock_response = format!(
+            r#"[{{
+                "block":"{}",
+                "level":{},
+		}}]"#,
+            mock_block, mock_level
+        );
+
+        let invalid_blocks_response =
+            InvalidBlocksInChainResponse::from_response_str(&mock_response);
+        assert!(invalid_blocks_response.is_err());
+    }
+
+    fn generate_valid_mock_response_string() -> String {
         let mock_block = "blockId1";
         let mock_level = 1;
+        let mock_error_response = generate_valid_mock_error_response_string();
 
+        let mock_response =
+            format_response_data_as_string(mock_block, mock_level, &mock_error_response);
+        mock_response
+    }
+
+    fn generate_valid_mock_error_response_string() -> String {
         let mock_kind = "permanent";
         let mock_id = "validator.invalid_block";
         let mock_invalid_block_hash = "blockId1";
@@ -117,7 +123,7 @@ mod test {
         let mock_extra_key = "operation";
         let mock_extra_value = "operationHash1";
 
-        let mock_error_response = get_mock_error_response(
+        let mock_error_response = format_error_response_data_as_string(
             mock_kind,
             mock_id,
             mock_invalid_block_hash,
@@ -126,36 +132,50 @@ mod test {
             mock_extra_value,
         );
 
-        let mock_response = get_mock_response(mock_block, mock_level, &mock_error_response);
-
-        let invalid_blocks_response =
-            InvalidBlocksInChainResponse::from_response_str(&mock_response);
-        assert!(invalid_blocks_response.is_ok());
-
-        let mut invalid_blocks = invalid_blocks_response.unwrap().invalid_blocks.into_vec();
-        assert!(invalid_blocks.len() == 1);
-
-        let invalid_block = invalid_blocks.pop().unwrap();
-        let invalid_block_array_str = format!("[{}]", invalid_block);
-        assert_eq!(invalid_block_array_str, mock_response);
+        mock_error_response
     }
 
-    #[test]
-    fn get_invalid_blocks_in_chain_from_malformed_response_fails() {
-        let mock_block = "blockId2";
-        let mock_level = 2;
-
-        // Mock response without errors field, which is required for all type of errors
-        let mock_response = format!(
-            r#"[{{
-				"block":"{}",
-				"level":{},
-			}}]"#,
-            mock_block, mock_level
+    fn format_error_response_data_as_string(
+        mock_kind: &str,
+        mock_id: &str,
+        mock_invalid_block_hash: &str,
+        mock_error: &str,
+        mock_extra_key: &str,
+        mock_extra_value: &str,
+    ) -> String {
+        let mock_error_response = format!(
+            r#"{{
+                "kind":"{}",
+                "id":"{}",
+                "invalid_block":"{}",
+                "error":"{}",
+                "{}":"{}"
+			}}"#,
+            mock_kind,
+            mock_id,
+            mock_invalid_block_hash,
+            mock_error,
+            mock_extra_key,
+            mock_extra_value
         );
 
-        let invalid_blocks_response =
-            InvalidBlocksInChainResponse::from_response_str(&mock_response);
-        assert!(invalid_blocks_response.is_err());
+        mock_error_response.replace('\n', "").replace('\t', "")
+    }
+
+    fn format_response_data_as_string(
+        mock_block: &str,
+        mock_level: i32,
+        mock_error_response: &str,
+    ) -> String {
+        let mock_response = format!(
+            r#"[{{
+                "block":"{}",
+                "level":{},
+                "errors":{}
+			}}]"#,
+            mock_block, mock_level, mock_error_response
+        );
+
+        mock_response.replace('\n', "").replace('\t', "")
     }
 }
