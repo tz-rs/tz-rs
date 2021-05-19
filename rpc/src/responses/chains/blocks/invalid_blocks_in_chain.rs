@@ -48,10 +48,6 @@ impl Response for InvalidBlocksInChainResponse {
     /// [`InvalidBlocksInChainResponse`](Self).
     fn from_response_str(response: &str) -> Result<Self, ParseError> {
         let invalid_blocks = json_array::JsonArray::from_response_str(response)?;
-        // .into_vec()
-        // .pop()
-        // .unwrap();
-
         Ok(Self { invalid_blocks })
     }
 }
