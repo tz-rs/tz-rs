@@ -103,6 +103,64 @@ async fn get_block_optional_min_date_now_ok() {
     assert_eq!(blocks.len(), 0);
 }
 
+#[tokio::test]
+async fn get_blocks_with_min_date_and_length_ok() {
+    let min_date = Some(get_test_naive_datetime_at_epoch());
+    let length = Some(5);
+
+    let command = generate_get_blocks_command_with_explicit_params(length, None, min_date);
+
+    let client = get_rpc_client();
+    assert!(client.check_node_online().await);
+
+    let client_response = client.execute(&command).await;
+    assert!(client_response.is_ok());
+
+    let block_response = client_response.unwrap();
+    let blocks = block_response.block_ids;
+
+    assert_eq!(blocks.len(), length.unwrap() as usize);
+}
+
+#[tokio::test]
+async fn get_blocks_with_head_and_length_ok() {
+    let length = Some(5);
+    let head_hash = Some("BKmXPAiniarmJAxvv3T3CQ9sa42TbLiDdE6c57Gc74NjcKNFQBE".to_string());
+
+    let command = generate_get_blocks_command_with_explicit_params(length, head_hash, None);
+
+    let client = get_rpc_client();
+    assert!(client.check_node_online().await);
+
+    let client_response = client.execute(&command).await;
+    assert!(client_response.is_ok());
+
+    let block_response = client_response.unwrap();
+    let blocks = block_response.block_ids;
+
+    assert_eq!(blocks.len(), 1);
+}
+
+#[tokio::test]
+async fn get_blocks_all_optional_args_ok() {
+    let length = Some(5);
+    let min_date = Some(get_test_naive_datetime_at_epoch());
+    let head_hash = Some("BKmXPAiniarmJAxvv3T3CQ9sa42TbLiDdE6c57Gc74NjcKNFQBE".to_string());
+
+    let command = generate_get_blocks_command_with_explicit_params(length, head_hash, min_date);
+
+    let client = get_rpc_client();
+    assert!(client.check_node_online().await);
+
+    let client_response = client.execute(&command).await;
+    assert!(client_response.is_ok());
+
+    let block_response = client_response.unwrap();
+    let blocks = block_response.block_ids;
+
+    assert_eq!(blocks.len(), 1);
+}
+
 fn generate_get_blocks_command_with_explicit_params(
     length: Option<u32>,
     head_hash: Option<String>,
