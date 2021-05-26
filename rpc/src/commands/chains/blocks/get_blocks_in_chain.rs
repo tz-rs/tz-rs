@@ -27,7 +27,7 @@ struct GetBlocksInChainParameters {
 }
 
 impl GetBlocksInChainParameters {
-    fn to_url_string(&self) -> String {
+    fn to_url_query_string(&self) -> String {
         let mut query_pairs = Vec::new();
 
         if let Some(length) = &self.length {
@@ -80,7 +80,7 @@ impl RpcClientCommand for GetBlocksInChain {
         let mut url_string = format!("chains/{}/blocks", self.chain_id.to_str());
         if let Some(params) = &self.params {
             url_string.push('?');
-            url_string.push_str(&params.to_url_string());
+            url_string.push_str(&params.to_url_query_string());
         }
         url_string
     }

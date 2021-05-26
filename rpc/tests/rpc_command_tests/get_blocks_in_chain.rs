@@ -1,5 +1,5 @@
 use super::*;
-use chrono::NaiveDateTime;
+use chrono::{self, NaiveDateTime};
 use commands::chains::blocks::get_blocks_in_chain::GetBlocksInChain;
 
 #[tokio::test]
@@ -69,6 +69,40 @@ async fn get_blocks_optional_length_ok() {
     assert_eq!(last_block_batch.unwrap().len(), length as usize);
 }
 
+#[tokio::test]
+async fn get_block_optional_min_date_at_epoch_ok() {
+    let min_date = get_test_naive_datetime_at_epoch();
+    let command = generate_get_blocks_command_with_explicit_params(None, None, Some(min_date));
+
+    let client = get_rpc_client();
+    assert!(client.check_node_online().await);
+
+    let client_response = client.execute(&command).await;
+    assert!(client_response.is_ok());
+
+    let block_response = client_response.unwrap();
+    let blocks = block_response.block_ids;
+
+    assert!(blocks.len() > 0);
+}
+
+#[tokio::test]
+async fn get_block_optional_min_date_now_ok() {
+    let min_date = get_naive_datetime_for_now();
+    let command = generate_get_blocks_command_with_explicit_params(None, None, Some(min_date));
+
+    let client = get_rpc_client();
+    assert!(client.check_node_online().await);
+
+    let client_response = client.execute(&command).await;
+    assert!(client_response.is_ok());
+
+    let block_response = client_response.unwrap();
+    let blocks = block_response.block_ids;
+
+    assert_eq!(blocks.len(), 0);
+}
+
 fn generate_get_blocks_command_with_explicit_params(
     length: Option<u32>,
     head_hash: Option<String>,
@@ -78,6 +112,10 @@ fn generate_get_blocks_command_with_explicit_params(
     GetBlocksInChain::with_explicit_params(chain_id, length, head_hash, min_date)
 }
 
-fn _get_test_naive_datetime_at_epoc() -> NaiveDateTime {
+fn get_naive_datetime_for_now() -> NaiveDateTime {
+    chrono::offset::Utc::now().naive_utc()
+}
+
+fn get_test_naive_datetime_at_epoch() -> NaiveDateTime {
     NaiveDateTime::from_timestamp(0, 0)
 }
