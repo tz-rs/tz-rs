@@ -67,6 +67,10 @@ impl<T: de::DeserializeOwned> JsonArray<JsonArray<T>> {
         }
         Ok(JsonArray { items })
     }
+
+    pub fn to_flattened_vec(self) -> Vec<T> {
+        self.into_iter().flatten().collect()
+    }
 }
 
 impl<T> iter::IntoIterator for JsonArray<T> {
@@ -207,6 +211,33 @@ mod test {
         let tuple_vec = get_tuple_vec_from_response_and_mock_values(response, &mock_values);
 
         assert!(check_tuples_are_eq(tuple_vec));
+    }
+
+    #[test]
+    fn two_dimensional_string_json_array_parsed_and_flattened_ok() {
+        let mock_values = [["foo", "bar"], ["foo_", "bar_"]];
+        let mock_str_to_parse = format!("{:?}", &mock_values);
+
+        type NestedType = JsonArray<String>;
+        let parse_response = JsonArray::<NestedType>::from_nested_response_str(&mock_str_to_parse);
+        assert!(parse_response.is_ok());
+
+        let response = parse_response.unwrap();
+
+        let flattened_mock_value_vec: Vec<&&str> = mock_values.iter().flatten().collect();
+        let flattened_response_vec = response.to_flattened_vec();
+
+        assert_eq!(flattened_response_vec.len(), flattened_mock_value_vec.len());
+
+        let mut zipped_iters = flattened_mock_value_vec
+            .into_iter()
+            .zip(flattened_response_vec);
+
+        while let Some(tuple) = zipped_iters.next() {
+            let response = tuple.1;
+            let mock = *tuple.0;
+            assert_eq!(response, mock);
+        }
     }
 
     #[test]
