@@ -85,14 +85,14 @@ impl<T> iter::IntoIterator for JsonArray<T> {
 impl<T: fmt::Display> fmt::Display for JsonArray<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.items.is_empty() {
-            write!(f, "")
+            write!(f, "[]")
         } else {
             let mut display_string = String::new();
             for value in &self.items {
                 display_string.push_str(&format!("{}, ", value));
             }
             display_string.truncate(display_string.len() - 2);
-            write!(f, "{}", display_string)
+            write!(f, "[{}]", display_string)
         }
     }
 }
@@ -249,10 +249,10 @@ mod test {
         assert!(parse_response.is_ok());
 
         let json_array = parse_response.unwrap();
-        let string_to_compare = format!("{}, {}", mock_values[0], mock_values[1]);
-        assert_eq!(json_array.to_string(), string_to_compare);
+        assert_eq!(json_array.len(), mock_values.len());
 
-        assert_eq!(json_array.into_vec().len(), mock_values.len());
+        let string_to_compare = format!("[{}, {}]", mock_values[0], mock_values[1]);
+        assert_eq!(json_array.to_string(), string_to_compare);
     }
 
     #[test]

@@ -106,66 +106,69 @@ mod test {
 
         let mut blocks = blocks_response.unwrap().block_ids.into_vec();
         let parsed_block = blocks.pop().unwrap();
-        assert!(parsed_block.to_string() == "");
+        assert_eq!(parsed_block.to_string(), "[]");
     }
 
     #[test]
     fn get_blocks_in_chain_from_response_single_ok() {
-        let mock_block_id = "blockId1";
-        let mock_response_str = format!(r#"[["{}"]]"#, mock_block_id);
+        let nested_mock_block_id = [["blockId1"]];
+        let mock_response_str = format!("{:?}", &nested_mock_block_id);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response_str);
 
-        let mut blocks = blocks_response.unwrap().block_ids.into_vec();
+        let blocks = blocks_response.unwrap().block_ids;
         assert!(blocks.len() == 1);
 
-        let parsed_block = blocks.pop();
+        let parsed_block = blocks.into_flattened_vec().pop();
         assert!(parsed_block.is_some());
 
+        let mock_block_id = *nested_mock_block_id.iter().flatten().next().unwrap();
         let parsed_block_id = parsed_block.unwrap().to_string();
+
         assert_eq!(parsed_block_id, mock_block_id);
     }
 
     #[test]
     fn get_blocks_in_chain_from_invalid_utf8_response_single_ok() {
-        let mock_nested_object = r#"{"invalid_utf8_string":[1,2,3,4]}"#;
-        let mock_response_str = format!(r#"[[{}]]"#, mock_nested_object);
+        let nested_mock_block_id = [[r#"{"invalid_utf8_string":[1,2,3,4]}"#]];
+        let mock_response_str = format!("{:?}", &nested_mock_block_id);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response_str);
         assert!(blocks_response.is_ok());
 
-        let mut blocks = blocks_response.unwrap().block_ids.into_vec();
+        let blocks = blocks_response.unwrap().block_ids;
         assert!(blocks.len() == 1);
 
-        let parsed_block = blocks.pop();
+        let parsed_block = blocks.into_flattened_vec().pop();
         assert!(parsed_block.is_some());
 
+        let mock_block_id = *nested_mock_block_id.iter().flatten().next().unwrap();
         let parsed_block_id = parsed_block.unwrap().to_string();
-        assert_eq!(parsed_block_id, mock_nested_object);
+
+        assert_eq!(parsed_block_id, mock_block_id);
     }
 
     #[test]
     fn get_blocks_in_chain_from_response_multiple_ok() {
-        let mock_block_ids = ["blockId1", "blockId2", "blockId3"];
-        let mock_response_str = format!(
-            "[{}]",
-            mock_block_ids
-                .iter()
-                .map(|block_id| format!(r#"["{}"]"#, &block_id))
-                .collect::<Vec<String>>()
-                .join(",")
-        );
+        let mock_block_ids = [["blockId1"], ["blockId2"], ["blockId3"]];
+        let mock_response_str = format!("{:?}", &mock_block_ids);
 
         let blocks_response = BlocksInChainResponse::from_response_str(&mock_response_str);
         assert!(blocks_response.is_ok());
 
-        let mut blocks = blocks_response.unwrap().block_ids.into_vec();
-        assert!(blocks.len() == 3);
+        let blocks = blocks_response.unwrap().block_ids;
+        assert_eq!(blocks.len(), 3);
 
-        for mock_block_id in mock_block_ids.iter().rev() {
-            let parsed_block = blocks.pop().unwrap();
-            let parsed_block_id = parsed_block.to_string();
-            assert_eq!(parsed_block_id, mock_block_id.to_string());
+        let mut zipped_tuple_iter = blocks
+            .into_flattened_vec()
+            .into_iter()
+            .zip(mock_block_ids.iter().flatten());
+
+        while let Some(tuple) = zipped_tuple_iter.next() {
+            let parsed_block_id = tuple.0;
+            let mock_block_id = *tuple.1;
+
+            assert_eq!(parsed_block_id, mock_block_id);
         }
     }
 }
