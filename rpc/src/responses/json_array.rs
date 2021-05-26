@@ -68,7 +68,7 @@ impl<T: de::DeserializeOwned> JsonArray<JsonArray<T>> {
         Ok(JsonArray { items })
     }
 
-    pub fn to_flattened_vec(self) -> Vec<T> {
+    pub fn into_flattened_vec(self) -> Vec<T> {
         self.into_iter().flatten().collect()
     }
 }
@@ -225,7 +225,7 @@ mod test {
         let response = parse_response.unwrap();
 
         let flattened_mock_value_vec: Vec<&&str> = mock_values.iter().flatten().collect();
-        let flattened_response_vec = response.to_flattened_vec();
+        let flattened_response_vec = response.into_flattened_vec();
 
         assert_eq!(flattened_response_vec.len(), flattened_mock_value_vec.len());
 
